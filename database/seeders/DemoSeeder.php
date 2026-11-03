@@ -21,15 +21,15 @@ class DemoSeeder extends Seeder
 
         DB::transaction(function () {
             $password = env('DEMO_PASSWORD', 'RelawanDemo123!');
-            foreach (['admin' => 'Admin Demo', 'koordinator' => 'Koordinator Demo', 'relawan' => 'Relawan Demo'] as $role => $name) {
+            foreach (['admin' => 'Yue', 'koordinator' => 'Koordinator Demo', 'relawan' => 'Relawan Demo'] as $role => $name) {
                 // Akun yang sudah ada tidak diganti password, nama, atau perannya.
-                $user = User::firstOrCreate(['email' => $role.'@relawanku.test'], ['name' => $name, 'password' => $password, 'role' => $role]);
+                $user = User::firstOrCreate(['email' => $role.'@gmail.com'], ['name' => $name, 'password' => $password, 'role' => $role]);
                 if ($user->role !== $role || ! $user->is_active) {
                     throw new RuntimeException('Email demo sudah dipakai akun nonaktif atau dengan peran berbeda. Seeder dibatalkan.');
                 }
             }
-            $coordinator = User::where('email', 'koordinator@relawanku.test')->firstOrFail();
-            $volunteer = User::where('email', 'relawan@relawanku.test')->firstOrFail();
+            $coordinator = User::where('email', 'koordinator@gmail.com')->firstOrFail();
+            $volunteer = User::where('email', 'relawan@gmail.com')->firstOrFail();
             if ($coordinator->role !== 'koordinator' || $volunteer->role !== 'relawan') {
                 throw new RuntimeException('Email demo sudah digunakan oleh akun dengan peran berbeda. Seeder dibatalkan.');
             }

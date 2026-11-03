@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Relawanku API v1",
+    "name": "Relawanku API",
     "description": "Import environment lokal dan jalankan DemoSeeder. Jalankan folder 01 Alur utama sebagai smoke test. Folder 02 adalah referensi endpoint untuk dijalankan satu per satu; hapus massal dan pembatalan memiliki prasyarat berbeda. Jangan menjalankan seluruh koleksi sekaligus. Token tiap peran dan ID hasil create tersimpan otomatis. Unggahan foto membutuhkan pemilihan file manual. Lihat docs/API.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

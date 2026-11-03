@@ -12,8 +12,8 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->getJson('/api/v1/health');
+        $response = $this->getJson('/api/health');
 
-        $response->assertOk()->assertJsonPath('version', 'v1');
+        $response->assertOk()->assertJsonPath('message', 'Relawanku API siap.');
     }
 }

@@ -25,7 +25,7 @@ Seluruh peran menggunakan **satu aplikasi Android**, dengan halaman dan menu yan
 
 ## Backend API
 
-Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan token **Laravel Sanctum**. Semua endpoint berada di `/api/v1`; proyek ini tidak memerlukan build frontend.
+Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan token **Laravel Sanctum**. Semua endpoint berada di `/api`; proyek ini tidak memerlukan build frontend.
 
 | Panduan / berkas | Isi |
 | --- | --- |

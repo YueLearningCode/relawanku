@@ -10,7 +10,7 @@
 
 ## Keputusan implementasi
 
-- API menggunakan prefiks `/api/v1` dan token Bearer Sanctum.
+- API menggunakan prefiks `/api` dan token Bearer Sanctum.
 - Waktu disimpan dalam UTC; klien mengirim ISO 8601 dengan zona waktu.
 - Pendaftaran mengunci baris kegiatan dalam transaksi sebelum memeriksa kuota.
 - Kegiatan, tugas, dan dokumentasi memakai soft delete untuk menjaga riwayat.

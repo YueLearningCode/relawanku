@@ -1,6 +1,6 @@
-# REST API Relawanku v1
+# REST API Relawanku
 
-Base URL lokal: `http://127.0.0.1:8000/api/v1`.
+Base URL lokal: `http://127.0.0.1:8000/api`.
 
 - [Spesifikasi OpenAPI 3.0 JSON](openapi.json)
 - [Koleksi Postman](../postman/Relawanku.postman_collection.json)
@@ -36,7 +36,7 @@ Prasyarat: PHP 8.3+ (lingkungan implementasi: 8.4.5), Composer 2, serta MySQL 8.
    php artisan serve --host=127.0.0.1 --port=8000
    ```
 
-5. Akses `GET http://127.0.0.1:8000/api/v1/health`. Endpoint ini memeriksa aplikasi, bukan koneksi database. Untuk memeriksa migration, gunakan `php artisan migrate:status`.
+5. Akses `GET http://127.0.0.1:8000/api/health`. Endpoint ini memeriksa aplikasi, bukan koneksi database. Untuk memeriksa migration, gunakan `php artisan migrate:status`.
 
 Backend hanya melayani API; tidak memerlukan Node.js, npm, Vite, atau build frontend. Document root pada virtual host Laragon harus mengarah ke folder `public`.
 
@@ -116,7 +116,7 @@ Pesan validasi bawaan mengikuti bahasa paket Laravel yang tersedia. Klien sebaik
 
 ## Daftar endpoint
 
-Semua path di bawah relatif terhadap `/api/v1`. **Pengelola** berarti admin atau koordinator pemilik kegiatan. **Peserta** berarti relawan yang memiliki riwayat pendaftaran pada kegiatan tersebut; tugas yang ditampilkan kepada relawan terbatas pada tugasnya sendiri.
+Semua path di bawah relatif terhadap `/api`. **Pengelola** berarti admin atau koordinator pemilik kegiatan. **Peserta** berarti relawan yang memiliki riwayat pendaftaran pada kegiatan tersebut; tugas yang ditampilkan kepada relawan terbatas pada tugasnya sendiri.
 
 ### Umum dan akun
 
@@ -212,7 +212,7 @@ Route pembaruan resource kegiatan, tugas, dokumentasi, dan pengguna juga menerim
 
 ## Integrasi Android
 
-- Emulator Android umumnya mengakses host melalui `http://10.0.2.2:8000/api/v1/` (akhiri base URL Retrofit dengan `/`).
+- Emulator Android umumnya mengakses host melalui `http://10.0.2.2:8000/api/` (akhiri base URL Retrofit dengan `/`).
 - Untuk perangkat fisik, gunakan IP LAN komputer dan jalankan server dengan `--host=0.0.0.0`; perangkat dan komputer harus terhubung ke jaringan yang sama.
 - Tambahkan header Bearer melalui interceptor setelah login. Tangani HTTP 401 dengan meminta pengguna masuk kembali.
 - Kirim waktu ISO 8601 lengkap dengan zona, misalnya `+07:00` atau `Z`. Respons datetime menggunakan UTC; ubah ke zona perangkat untuk tampilan.
@@ -250,8 +250,8 @@ php artisan serve --host=127.0.0.1 --port=8766 --no-reload
 Pada terminal ketiga:
 
 ```powershell
-$env:TEST_API_URL = 'http://127.0.0.1:8765/api/v1'
-$env:TEST_API_URL_SECOND = 'http://127.0.0.1:8766/api/v1'
+$env:TEST_API_URL = 'http://127.0.0.1:8765/api'
+$env:TEST_API_URL_SECOND = 'http://127.0.0.1:8766/api'
 $env:TEST_MYSQL_DATABASE = 'relawanku_concurrency_test'
 $env:TEST_MYSQL_PORT = '3306'
 php vendor/bin/phpunit tests/Feature/ConcurrentRegistrationTest.php
