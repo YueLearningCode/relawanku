@@ -23,6 +23,24 @@ Seluruh peran menggunakan **satu aplikasi Android**, dengan halaman dan menu yan
 
 > **Status repositori:** backend REST API Laravel 13 tersedia. Aplikasi Android dan rancangan antarmukanya menjadi tahap pengembangan berikutnya.
 
+## Struktur Repository
+
+Repository GitHub ini memuat backend Laravel dan tempat proyek Android dalam satu riwayat Git.
+
+```text
+relawanku/
+├── backend/       # Laravel, Composer, migration, dan tes backend
+├── android/       # Lokasi proyek Android Studio Kotlin dan XML
+├── docs/          # Dokumentasi API dan database bersama
+├── postman/       # Koleksi dan environment pengujian
+├── scripts/       # Generator kontrak API
+└── README.md
+```
+
+Buka `backend` di VS Code dan `android` di Android Studio setelah proyek Android dibuat. Semua commit dan push dilakukan ke repository induk yang sama; jangan membuat `.git` kedua di dalam `android` atau `backend`.
+
+Folder `android` saat ini disiapkan untuk proyek baru, belum berisi aplikasi atau APK. Langkah pembuatannya ada di [panduan Android](android/README.md).
+
 ## Backend API
 
 Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan token **Laravel Sanctum**. Semua endpoint berada di `/api`; proyek ini tidak memerlukan build frontend.
@@ -36,9 +54,10 @@ Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan token **Laravel
 | [Environment Postman](postman/Relawanku.local.postman_environment.json) | Base URL lokal, akun demo, token, dan ID objek. |
 | [Checklist dan bukti pengujian](todo.md) | Tahap implementasi serta hasil verifikasi. |
 
-Setelah MySQL aktif dan database `relawanku` tersedia, siapkan `.env` dari `.env.example` dan sesuaikan koneksi database. Pada instalasi baru, jalankan `composer install` dan `php artisan key:generate` jika `APP_KEY` masih kosong. Kemudian:
+Dari folder `backend`, setelah MySQL aktif dan database `relawanku` tersedia, siapkan `.env` dari `.env.example` dan sesuaikan koneksi database. Pada instalasi baru, jalankan `composer install` dan `php artisan key:generate` jika `APP_KEY` masih kosong. Kemudian:
 
 ```powershell
+cd backend
 php artisan migrate
 php artisan db:seed --class=DemoSeeder
 php artisan storage:link

@@ -9,6 +9,14 @@ Base URL lokal: `http://127.0.0.1:8000/api`.
 
 ## Menjalankan backend
 
+Jalankan perintah Composer, Artisan, dan PHPUnit dari folder `backend`:
+
+```powershell
+cd E:\laragon\www\relawanku\relawanku\backend
+```
+
+Pada komputer lain, sesuaikan lokasi clone repository. Folder `docs`, `postman`, dan `scripts` tetap berada di akar repository. File konfigurasi lokal Laravel berada di `backend/.env`.
+
 Prasyarat: PHP 8.3+ (lingkungan implementasi: 8.4.5), Composer 2, serta MySQL 8.4+ di Laragon. Ekstensi PHP yang dibutuhkan antara lain PDO MySQL, mbstring, openssl, fileinfo, intl, dan GD untuk pengujian gambar. PHP CLI pada lingkungan ini juga menyediakan SQLite untuk tes.
 
 1. Jalankan MySQL dari Laragon dan buat database kosong bernama `relawanku` dengan charset `utf8mb4`. Contoh SQL melalui phpMyAdmin:
@@ -38,7 +46,7 @@ Prasyarat: PHP 8.3+ (lingkungan implementasi: 8.4.5), Composer 2, serta MySQL 8.
 
 5. Akses `GET http://127.0.0.1:8000/api/health`. Endpoint ini memeriksa aplikasi, bukan koneksi database. Untuk memeriksa migration, gunakan `php artisan migrate:status`.
 
-Backend hanya melayani API; tidak memerlukan Node.js, npm, Vite, atau build frontend. Document root pada virtual host Laragon harus mengarah ke folder `public`.
+Backend hanya melayani API; tidak memerlukan Node.js, npm, Vite, atau build frontend. Document root pada virtual host Laragon harus mengarah ke folder `backend/public` dari akar repository.
 
 ## Postman
 
@@ -262,6 +270,7 @@ Sesuaikan `TEST_MYSQL_HOST`, `TEST_MYSQL_USERNAME`, `TEST_MYSQL_PASSWORD`, dan `
 Spesifikasi dan koleksi dapat dibuat ulang setelah memperbarui katalog endpoint di `scripts/generate-api-artifacts.py`:
 
 ```powershell
+# Jalankan dari akar repository, bukan backend.
 python scripts/generate-api-artifacts.py
 ```
 

@@ -45,3 +45,13 @@ MySQL Laragon utama belum menerima koneksi saat pemeriksaan. Verifikasi memakai 
 4. Jalankan `php artisan serve`, impor kedua JSON Postman, dan jalankan folder 01.
 
 Petunjuk lengkap dan cara mengulang tes konkurensi ada di [docs/API.md](docs/API.md). Pengujian Android/Retrofit belum dijalankan karena aplikasi Android belum tersedia pada repositori ini.
+
+## Struktur monorepo
+
+- Backend Laravel berada di `backend`; jalankan Composer, Artisan, dan PHPUnit dari folder tersebut.
+- Dokumentasi, Postman, dan generator kontrak tetap di akar repository.
+- Folder `android` disiapkan untuk proyek Kotlin/XML; aplikasi Android belum dibuat.
+- Data MySQL dan akun tidak diubah oleh penataan folder.
+- Verifikasi setelah penataan: 39 route `/api` terdaftar; Composer valid; endpoint `GET http://127.0.0.1:8000/api/health` menghasilkan HTTP 200.
+- Tes setelah pemindahan: 25 lulus dari 26; satu error lama pada tes DemoSeeder karena mencari `relawan@relawanku.test` sementara seeder membuat `relawan@gmail.com`. Tes memakai SQLite `:memory:`; bukan verifikasi konkurensi MySQL.
+- Pemeriksaan integritas source yang dipindahkan dan `.env`: seluruh hash sesuai; `.git` tetap di akar dan tidak ada repository Git bersarang.

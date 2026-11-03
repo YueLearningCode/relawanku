@@ -131,6 +131,7 @@ Mutasi kegiatan dan riwayatnya berada dalam transaksi yang sama. Tabel ini tidak
 ## Data contoh lokal
 
 ```powershell
+# Jalankan dari folder backend.
 php artisan db:seed --class=DemoSeeder
 ```
 
