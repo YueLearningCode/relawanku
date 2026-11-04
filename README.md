@@ -4,16 +4,47 @@
 
 **Temukan kegiatan. Ambil peran. Hadirkan perubahan.**
 
-Aplikasi Android untuk mempertemukan relawan dengan kegiatan sosial\
+Aplikasi Android untuk mempertemukan relawan dengan kegiatan sosial<br>
 dan membantu koordinator mengelola kegiatan dalam satu tempat.
 
 **Proyek PAPB** · **Android** · **Kegiatan Sosial**
 
-[Tentang](#tentang-proyek) · [Fitur](#fitur-yang-direncanakan) · [Peran](#peran-dan-hak-akses) · [Teknologi](#rencana-teknologi-dan-alat-kerja)
+[Tentang](#tentang-proyek) · [Setup Backend](#menjalankan-backend) · [Dokumentasi](#dokumentasi) · [Desain Visual](#desain-visual)
 
 </div>
 
 ---
+
+## Daftar Isi
+
+- [🌱 Relawanku](#-relawanku)
+  - [Daftar Isi](#daftar-isi)
+  - [Tentang Proyek](#tentang-proyek)
+  - [Struktur Repositori](#struktur-repositori)
+  - [Backend API](#backend-api)
+  - [Menjalankan Backend](#menjalankan-backend)
+  - [Dokumentasi](#dokumentasi)
+  - [Fitur Aplikasi](#fitur-aplikasi)
+  - [Peran dan Hak Akses](#peran-dan-hak-akses)
+  - [Navigasi Aplikasi](#navigasi-aplikasi)
+  - [Rancangan Halaman](#rancangan-halaman)
+    - [Relawan](#relawan)
+    - [Koordinator](#koordinator)
+    - [Admin](#admin)
+  - [Alur Penggunaan](#alur-penggunaan)
+    - [Mengikuti kegiatan sebagai relawan](#mengikuti-kegiatan-sebagai-relawan)
+    - [Mengelola kegiatan sebagai koordinator](#mengelola-kegiatan-sebagai-koordinator)
+  - [Desain Visual](#desain-visual)
+  - [Sistem Warna](#sistem-warna)
+  - [Tipografi](#tipografi)
+    - [Sistem Warna](#sistem-warna)
+      - [Warna Utama dan Pendamping](#warna-utama-dan-pendamping)
+      - [Warna Teks](#warna-teks)
+      - [Warna Status](#warna-status)
+      - [Latar dan Permukaan](#latar-dan-permukaan)
+      - [Contoh Kombinasi Komponen](#contoh-kombinasi-komponen)
+  - [Teknologi dan Alat Kerja](#teknologi-dan-alat-kerja)
+  - [Database](#database)
 
 ## Tentang Proyek
 
@@ -23,9 +54,9 @@ Seluruh peran menggunakan **satu aplikasi Android**, dengan halaman dan menu yan
 
 > **Status repositori:** backend REST API Laravel 13 tersedia. Aplikasi Android dan rancangan antarmukanya menjadi tahap pengembangan berikutnya.
 
-## Struktur Repository
+## Struktur Repositori
 
-Repository GitHub ini memuat backend Laravel dan tempat proyek Android dalam satu riwayat Git.
+Repositori ini menampung backend Laravel, folder pengembangan Android, dan dokumentasi bersama dalam satu riwayat Git.
 
 ```text
 relawanku/
@@ -37,48 +68,81 @@ relawanku/
 └── README.md
 ```
 
-Buka `backend` di VS Code dan `android` di Android Studio setelah proyek Android dibuat. Semua commit dan push dilakukan ke repository induk yang sama; jangan membuat `.git` kedua di dalam `android` atau `backend`.
+Buka `backend` di VS Code dan `android` di Android Studio setelah proyek Android dibuat. Semua commit dan push dilakukan melalui repositori induk yang sama, dengan satu folder `.git` di akar proyek.
 
 Folder `android` saat ini disiapkan untuk proyek baru, belum berisi aplikasi atau APK. Langkah pembuatannya ada di [panduan Android](android/README.md).
 
 ## Backend API
 
-Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan token **Laravel Sanctum**. Semua endpoint berada di `/api`; proyek ini tidak memerlukan build frontend.
+Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan autentikasi token **Laravel Sanctum**. Endpoint tersedia melalui prefiks `/api`.
 
-| Panduan / berkas | Isi |
+| Keterangan | Nilai |
 | --- | --- |
-| [Panduan REST API](docs/API.md) | Setup Laragon, autentikasi, seluruh endpoint, dan integrasi Android. |
-| [Rancangan database](docs/DATABASE.md) | Kolom, relasi, aturan data, dan akun demo lokal. |
-| [OpenAPI JSON](docs/openapi.json) | Kontrak REST API untuk impor ke alat dokumentasi/pengujian. |
-| [Koleksi Postman](postman/Relawanku.postman_collection.json) | Alur pengujian otomatis dan referensi endpoint. |
-| [Environment Postman](postman/Relawanku.local.postman_environment.json) | Base URL lokal, akun demo, token, dan ID objek. |
-| [Checklist dan bukti pengujian](todo.md) | Tahap implementasi serta hasil verifikasi. |
+| Lokasi backend | `backend/` |
+| Base URL lokal | `http://127.0.0.1:8000/api` |
+| Pemeriksaan aplikasi | `GET /api/health` |
+| Autentikasi | `Authorization: Bearer <token>` |
+| Document root Laragon | `backend/public/` |
 
-Dari folder `backend`, setelah MySQL aktif dan database `relawanku` tersedia, siapkan `.env` dari `.env.example` dan sesuaikan koneksi database. Pada instalasi baru, jalankan `composer install` dan `php artisan key:generate` jika `APP_KEY` masih kosong. Kemudian:
+## Menjalankan Backend
+
+Siapkan **PHP 8.3+**, **Composer 2**, dan **MySQL 8.4+**. Jalankan MySQL melalui Laragon, lalu buat database `relawanku` dengan charset `utf8mb4`.
+
+**1. Instal dependensi dari akar repositori.**
 
 ```powershell
 cd backend
+composer install
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+**2. Atur koneksi database di `backend/.env`.**
+
+Sesuaikan `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` dengan konfigurasi MySQL lokal. Jalankan perintah berikut hanya jika `APP_KEY` masih kosong:
+
+```powershell
+php artisan key:generate
+```
+
+**3. Jalankan migration dan server dari folder `backend`.**
+
+```powershell
 php artisan migrate
-php artisan db:seed --class=DemoSeeder
 php artisan storage:link
 php artisan serve
 ```
 
-Data demo bersifat opsional dan hanya untuk lingkungan lokal/pengujian. Impor koleksi serta environment Postman, lalu jalankan folder **01 Alur utama**. Panduan lengkap tersedia di [docs/API.md](docs/API.md).
+Untuk menambahkan data contoh lokal, jalankan seeder secara opsional:
 
-## Daftar Isi
+```powershell
+php artisan db:seed --class=DemoSeeder
+```
 
-- [Backend API](#backend-api)
-- [Fitur yang Direncanakan](#fitur-yang-direncanakan)
-- [Peran dan Hak Akses](#peran-dan-hak-akses)
-- [Navigasi Aplikasi](#navigasi-aplikasi)
-- [Rancangan Halaman](#rancangan-halaman)
-- [Alur Penggunaan](#alur-penggunaan)
-- [Arah Desain Visual](#arah-desain-visual)
-- [Rencana Teknologi dan Alat Kerja](#rencana-teknologi-dan-alat-kerja)
-- [Rancangan Database](#rancangan-database)
+Seeder tersedia untuk lingkungan `local` atau `testing`. Untuk mencoba API, impor koleksi dan environment Postman, lalu jalankan folder **01 Alur utama**. Sesuaikan email akun dan password environment dengan akun lokal yang digunakan.
 
-## Fitur yang Direncanakan
+Pengujian backend dapat dijalankan dari folder yang sama:
+
+```powershell
+php artisan test --compact
+```
+
+Panduan konfigurasi dan integrasi Android tersedia di [docs/API.md](docs/API.md). Catatan hasil pengujian beserta kendala yang sudah diketahui ada di [todo.md](todo.md).
+
+## Dokumentasi
+
+| Panduan / berkas | Isi |
+| --- | --- |
+| [Panduan REST API](docs/API.md) | Setup Laragon, autentikasi, endpoint, dan integrasi Android. |
+| [Dokumentasi database](docs/DATABASE.md) | Kolom, relasi, aturan data, dan penjelasan data demo. |
+| [OpenAPI JSON](docs/openapi.json) | Kontrak REST API untuk diimpor ke alat dokumentasi atau pengujian. |
+| [Koleksi Postman](postman/Relawanku.postman_collection.json) | Alur pengujian otomatis dan referensi endpoint. |
+| [Environment Postman](postman/Relawanku.local.postman_environment.json) | Base URL lokal, akun, token, dan ID objek pengujian. |
+| [Panduan Android](android/README.md) | Pembuatan proyek Kotlin/XML dan koneksi ke backend. |
+| [Checklist dan bukti pengujian](todo.md) | Tahap implementasi, hasil verifikasi, dan pekerjaan lanjutan. |
+
+## Fitur Aplikasi
+
+Backend menyediakan API untuk fitur berikut. Tampilan dan interaksi Android mengikuti rancangan pada bagian selanjutnya.
 
 | Fitur | Gambaran penggunaan |
 | --- | --- |
@@ -100,7 +164,7 @@ Data demo bersifat opsional dan hanya untuk lingkungan lokal/pengujian. Impor ko
 
 ## Navigasi Aplikasi
 
-Menu utama disesuaikan dengan kebutuhan setiap peran.
+Rancangan menu utama disesuaikan dengan kebutuhan setiap peran.
 
 | Peran | Menu utama |
 | --- | --- |
@@ -165,21 +229,107 @@ Tampilan admin berfokus pada pengelolaan pengguna dan pengawasan seluruh kegiata
 4. Membuka absensi dan memantau kehadiran.
 5. Mengunggah dokumentasi kegiatan.
 
-## Arah Desain Visual
+## Desain Visual
 
 Antarmuka dirancang agar ramah untuk relawan dan praktis untuk pengelola kegiatan.
 
 | Elemen | Arah desain |
 | --- | --- |
-| **Warna** | Hijau atau teal sebagai warna utama, dipadukan dengan latar putih dan teks gelap. |
+| **Warna** | Primary Teal `#0F766E` dan Secondary Sage `#DCECE3`, dipadukan dengan permukaan putih dan teks gelap. |
+| **Tipografi** | Nunito dengan ketebalan Regular, SemiBold, dan Bold sesuai fungsi teks. |
 | **Kartu kegiatan** | Foto dan informasi utama yang membantu relawan memilih kegiatan. |
 | **Status** | Label yang mudah dikenali: **Pendaftaran dibuka**, **Kuota penuh**, **Sudah terdaftar**, dan **Selesai**. |
 | **Aksi utama** | Satu tombol yang menonjol pada setiap halaman, seperti **Daftar kegiatan** atau **Buka absensi**. |
 | **Dashboard** | Ringkasan yang mudah dipindai; grafik digunakan jika membantu memahami data. |
 
-## Rencana Teknologi dan Alat Kerja
+### Sistem Warna
 
-Pilihan berikut menjadi acuan perencanaan. Versi dan konfigurasi akan didokumentasikan saat implementasi tersedia.
+Palet menggunakan teal sebagai identitas utama, sage sebagai warna pendamping, dan latar terang untuk menjaga keterbacaan.
+
+<details>
+<summary>Lihat gambar panduan sistem warna</summary>
+
+![Panduan sistem warna Relawanku: teal, sage, warna teks, status, dan permukaan](color-relawanku.png)
+
+</details>
+
+#### Warna Utama dan Pendamping
+
+| Warna | Kode HEX | Penggunaan |
+| --- | --- | --- |
+| Teal gelap | `#115E59` | Kondisi tombol ditekan. |
+| **Primary Teal** | `#0F766E` | Tombol utama, navigasi aktif, dan identitas aplikasi. |
+| Teal cerah | `#14B8A6` | Aksen dan elemen dekoratif. |
+| Teal muda | `#99F6E4` | Penekanan visual ringan. |
+| Teal sangat muda | `#F0FDFA` | Latar bagian yang disorot. |
+| Sage gelap | `#49675A` | Ikon atau aksen pendamping. |
+| Sage sedang | `#6F8F7A` | Elemen dekoratif pendamping. |
+| Sage muda | `#AEC9B7` | Penekanan visual ringan. |
+| **Secondary Sage** | `#DCECE3` | Latar label kategori dan tombol sekunder. |
+| Sage sangat muda | `#F1F7F3` | Latar bagian pendamping. |
+
+#### Warna Teks
+
+| Elemen | Kode HEX | Penggunaan |
+| --- | --- | --- |
+| Teks utama | `#172B26` | Judul, nama kegiatan, dan informasi penting. |
+| Teks pendukung | `#344B42` | Deskripsi dan label formulir. |
+| Teks sekunder | `#52645D` | Tanggal, lokasi, dan keterangan tambahan. |
+| Teks petunjuk | `#708179` | Petunjuk ringan; periksa kontras pada ukuran kecil. |
+| Teks nonaktif | `#B8C7BF` | Elemen yang tidak dapat digunakan. |
+| Pemisah | `#DCE5DF` | Garis pembatas, bukan teks informasi. |
+
+#### Warna Status
+
+| Status | Warna utama | Warna latar | Contoh penggunaan |
+| --- | --- | --- | --- |
+| Berhasil | `#15803D` | `#F0FDF4` | Pendaftaran berhasil atau absensi tercatat. |
+| Peringatan | `#B45309` | `#FFFBEB` | Kuota hampir penuh. |
+| Kesalahan | `#B91C1C` | `#FEF2F2` | Gagal menyimpan atau validasi bermasalah. |
+| Informasi | `#1D4ED8` | `#EFF6FF` | Informasi dan petunjuk kegiatan. |
+
+Gunakan warna status bersama teks atau ikon agar maknanya tetap jelas.
+
+#### Latar dan Permukaan
+
+| Elemen | Kode HEX | Penggunaan |
+| --- | --- | --- |
+| Background | `#F7FAF9` | Latar utama halaman. |
+| Surface | `#FFFFFF` | Kartu kegiatan, formulir, dan dialog. |
+| Teal Surface | `#F0FDFA` | Ringkasan atau bagian yang disorot. |
+| Outline | `#DCE5DF` | Garis batas dan pemisah. |
+
+#### Contoh Kombinasi Komponen
+
+| Komponen | Latar | Teks atau ikon |
+| --- | --- | --- |
+| Tombol utama **Daftar kegiatan** | `#0F766E` | `#FFFFFF` |
+| Tombol utama saat ditekan | `#115E59` | `#FFFFFF` |
+| Tombol sekunder | `#DCECE3` | `#344B42` |
+| Label kategori **Lingkungan** | `#DCECE3` | `#344B42` |
+| Kartu kegiatan | `#FFFFFF` | `#172B26` |
+| Navigasi aktif | `#DCECE3` | `#0F766E` |
+| Pesan kesalahan | `#FEF2F2` | `#B91C1C` |
+
+### Tipografi
+
+Rancangan tipografi menggunakan **Nunito** untuk judul, isi, label, dan navigasi. Ukuran teks dan tinggi baris berikut menjadi acuan tampilan Android dalam satuan `sp`.
+
+| Elemen | Font | Ketebalan | Ukuran Android | Tinggi baris |
+| --- | --- | --- | --- | --- |
+| Judul pembuka | Nunito | Bold · 700 | `28 sp` | `36 sp` |
+| Judul halaman | Nunito | Bold · 700 | `24 sp` | `32 sp` |
+| Judul bagian | Nunito | Bold · 700 | `20 sp` | `28 sp` |
+| Judul kartu kegiatan | Nunito | Bold · 700 | `18 sp` | `26 sp` |
+| Deskripsi utama | Nunito | Regular · 400 | `16 sp` | `24 sp` |
+| Label formulir | Nunito | SemiBold · 600 | `14 sp` | `20 sp` |
+| Tanggal, lokasi, keterangan | Nunito | Regular · 400 | `14 sp` | `20 sp` |
+| Teks tombol | Nunito | Bold · 700 | `16 sp` | `24 sp` |
+| Label status dan navigasi | Nunito | SemiBold · 600 | `12 sp` | `16 sp` |
+
+## Teknologi dan Alat Kerja
+
+Backend Laravel dan autentikasi Sanctum sudah digunakan pada proyek. Teknologi Android serta alat desain, kolaborasi, dan pelaporan berikut menjadi acuan pengembangan tim.
 
 | Kebutuhan | Pilihan teknologi / alat |
 | --- | --- |
@@ -187,7 +337,7 @@ Pilihan berikut menjadi acuan perencanaan. Versi dan konfigurasi akan didokument
 | **Koneksi Android ke API** | Retrofit |
 | **Backend API** | Laravel, PHP, Composer, dan VS Code |
 | **Server dan database lokal** | Laragon dan MySQL; phpMyAdmin untuk inspeksi database |
-| **Autentikasi API** | Laravel Sanctum sebagai pilihan yang direkomendasikan |
+| **Autentikasi API** | Laravel Sanctum |
 | **Pengujian API** | Postman |
 | **Rancangan layar** | Figma |
 | **ERD dan use case** | draw.io |
@@ -204,9 +354,9 @@ Pilihan berikut menjadi acuan perencanaan. Versi dan konfigurasi akan didokument
 
 </details>
 
-## Rancangan Database
+## Database
 
-Rancangan awal data mencakup akun, kegiatan, pendaftaran, tugas, kehadiran, dan dokumentasi.
+Database mencakup akun, kegiatan, pendaftaran, tugas, sesi absensi, kehadiran, dokumentasi, dan riwayat aktivitas.
 
 | Tabel | Fungsi |
 | --- | --- |
