@@ -55,3 +55,21 @@ Petunjuk lengkap dan cara mengulang tes konkurensi ada di [docs/API.md](docs/API
 - Verifikasi setelah penataan: 39 route `/api` terdaftar; Composer valid; endpoint `GET http://127.0.0.1:8000/api/health` menghasilkan HTTP 200.
 - Tes setelah pemindahan: 25 lulus dari 26; satu error lama pada tes DemoSeeder karena mencari `relawan@relawanku.test` sementara seeder membuat `relawan@gmail.com`. Tes memakai SQLite `:memory:`; bukan verifikasi konkurensi MySQL.
 - Pemeriksaan integritas source yang dipindahkan dan `.env`: seluruh hash sesuai; `.git` tetap di akar dan tidak ada repository Git bersarang.
+
+## UI Android tahap pertama pada 4 November 2026
+
+- [x] Nunito 400/600/700 dibundel offline, palet teal-sage dan tema Material 3 diterapkan.
+- [x] Dua splashscreen animasi, masuk/daftar dengan validasi, serta pilihan tiga peran pratinjau.
+- [x] Relawan: beranda, jelajah, pencarian/filter, detail, daftar/batal, tugas, absensi contoh RW2026, dokumentasi, profil, dan riwayat.
+- [x] Koordinator: dashboard, tambah/edit kegiatan, arsip individu/massal dengan konfirmasi, peserta, pembagian tugas, sesi absensi, dan pemilih dokumentasi lokal.
+- [x] Admin: dashboard, daftar/cari/filter pengguna, tambah/edit profil contoh, pengaturan peran dan aktif/nonaktif.
+- [x] APK debug berhasil dibangun. Satu unit test bawaan dan empat tes perangkat (termasuk tiga skenario alur UI) lulus pada emulator API 37.
+- [x] Tes alur mencakup validasi form, pencarian kosong, pendaftaran, kode absensi salah/benar, state saat recreate Activity, tambah/arsip kegiatan, tambah pengguna, ganti peran, dan indikator navigasi aktif.
+- [x] lintDebug selesai tanpa error. Peringatan mencakup versi dependensi bawaan dan resource desain yang belum dipakai; laporan tersedia di android/app/build/reports/lint-results-debug.html.
+- [x] Screenshot asli emulator diperiksa untuk login, beranda, jelajah, detail, dashboard koordinator/admin; dashboard juga diperiksa pada lebar 360 dp dan font scale 130 persen. Pengaturan emulator dipulihkan.
+- [x] git diff --check lulus. Tidak ada perubahan backend maupun database dalam tahap UI ini.
+- [ ] Integrasi Retrofit, token Sanctum, API tiga role, dan unggah dokumentasi ke Laravel.
+- [ ] Ganti formulir tanggal/waktu contoh dengan pemilih terstruktur serta ISO 8601.
+- [ ] Verifikasi pada HP fisik, Android API 24, dan skenario jaringan nyata.
+
+UI ini menggunakan PreviewState lokal, bukan autentikasi atau otorisasi produksi. Pemilih peran hanya untuk pratinjau. Data demo berada dalam ViewModel dan bertahan selama proses aplikasi, termasuk recreate Activity. Draft formulir belum dipertahankan saat rotasi. Akses foto lokal belum berarti unggah ke server.

@@ -1,5 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" ?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#0F766E</color>
+    <color name="primary_dark">#115E59</color>
+    <color name="accent">#14B8A6</color>
+    <color name="sage">#DCECE3</color>
+    <color name="background">#F7FAF9</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="soft">#F0FDFA</color>
+    <color name="ink">#172B26</color>
+    <color name="body">#344B42</color>
+    <color name="muted">#52645D</color>
+    <color name="outline">#DCE5DF</color>
+    <color name="success">#15803D</color>
+    <color name="success_bg">#F0FDF4</color>
+    <color name="warning">#B45309</color>
+    <color name="warning_bg">#FFFBEB</color>
+    <color name="error">#B91C1C</color>
+    <color name="error_bg">#FEF2F2</color>
+    <color name="info">#1D4ED8</color>
+    <color name="info_bg">#EFF6FF</color>
 </resources>
