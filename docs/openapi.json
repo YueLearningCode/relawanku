@@ -5455,6 +5455,15 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "my_registration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MyRegistration"
+              }
+            ],
+            "nullable": true,
+            "description": "Hanya detail kegiatan: pendaftaran pengguna saat ini atau null."
           }
         }
       },
@@ -5742,6 +5751,57 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "MyRegistration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "activity_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "cancelled"
+            ]
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelled_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "attendance": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "registration_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "checked_in_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "nullable": true
           }
         }
       }

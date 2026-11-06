@@ -1,65 +1,113 @@
 # Android Relawanku
 
-Aplikasi native Kotlin dan XML dengan Nunito serta sistem warna teal-sage dari README utama. Proyek Android Studio berada dalam repository GitHub yang sama dengan backend Laravel.
+Aplikasi native Kotlin/XML dengan Nunito dan palet teal-sage, terhubung ke Laravel melalui Retrofit 3.0.0 dan Gson. Branch integrasi: `andro-backend`. Welcome tetap berupa XML; halaman lain tetap dirender dari Kotlin sesuai kesepakatan sebelumnya.
 
-## Status implementasi
+## Menjalankan dari Android Studio
 
-UI interaktif memakai data contoh lokal dalam PreviewState. Belum ada pemanggilan API, autentikasi server, atau penyimpanan ke MySQL. Pemilihan peran pada halaman masuk hanya untuk pratinjau; ini bukan mekanisme otorisasi produksi. Password tidak disimpan. Data demo bertahan saat rotasi layar, tetapi kembali ke awal setelah proses aplikasi berakhir.
+1. Nyalakan MySQL Laragon. Pastikan `backend/.env` mengarah ke database lokal yang benar.
+2. Dari folder `backend`, jalankan:
 
-Layar tersedia:
+```powershell
+php artisan migrate
+php artisan storage:link
+php artisan serve --host=0.0.0.0 --port=8000
+```
 
-- Dua splashscreen animasi, Welcome dari XML, masuk, dan daftar dengan validasi form.
-- Relawan: beranda, jelajah dengan pencarian/filter, detail kegiatan, daftar/batal, Kegiatanku, tugas, absensi, dokumentasi, profil, dan riwayat.
-- Koordinator: dashboard, daftar kegiatan, tambah/edit, arsip individu/massal dengan konfirmasi, peserta, tugas, sesi absensi, dan dokumentasi.
-- Admin: dashboard, seluruh kegiatan, cari/filter pengguna, tambah/edit pengguna, penggantian peran, dan aktif/nonaktif akun contoh.
-- Kondisi daftar data tersedia, loading, kosong, dan gagal dapat dilihat melalui ikon filter di daftar kegiatan.
+3. Buka folder `android` melalui Android Studio, siapkan Android SDK yang diminta, JDK lengkap 21 untuk Java toolchain, lalu lakukan Gradle Sync.
+4. Jalankan `app` pada emulator atau HP.
+5. Welcome > Mulai langkah baikmu > **Atur koneksi server**, lalu gunakan salah satu alamat berikut:
 
-## Menjalankan
+| Perangkat | Base URL |
+| --- | --- |
+| Emulator Android Studio | `http://10.0.2.2:8000/api/` |
+| HP melalui Wi-Fi yang sama | `http://IP-LAPTOP:8000/api/` |
+| Emulator/HP USB melalui ADB reverse | `http://127.0.0.1:8000/api/` |
 
-1. Android Studio > Open > pilih folder android ini. Tunggu Gradle Sync selesai.
-2. Pilih emulator atau HP yang sudah mengizinkan USB debugging.
-3. Jalankan konfigurasi app.
-4. Tunggu dua layar pembuka, lalu pada Welcome ketuk Mulai langkah baikmu. Pada halaman masuk, gulir ke bagian Coba tampilan aplikasi.
-5. Pilih Relawan, Koordinator, atau Admin, lalu ketuk Coba dengan data contoh. Server Laravel tidak diperlukan untuk tahap UI.
-6. Peran dapat diganti dari Profil > Ganti peran pratinjau.
+Untuk ADB reverse, jalankan dari terminal dengan Android platform-tools di PATH:
 
-Kode absensi untuk simulasi UI adalah RW2026. Kode ini tidak terkait sesi absensi Laravel. Tanggal kegiatan dan nama peserta merupakan data ilustrasi. Validasi waktu, kepemilikan data, kuota bersamaan, dan hak akses produksi tetap harus ditegakkan oleh backend saat integrasi.
+```powershell
+adb reverse tcp:8000 tcp:8000
+```
 
-Form kegiatan saat ini menggunakan tanggal/waktu berupa teks untuk penyusunan UI; pemilihan tanggal/waktu terstruktur serta konversi ISO 8601 menjadi pekerjaan integrasi berikutnya. Form admin membuat profil contoh tanpa kredensial server. Pemilih foto menampilkan dokumentasi lokal, belum mengunggah file.
+Jika ada beberapa perangkat, gunakan `adb -s SERIAL reverse tcp:8000 tcp:8000`. `127.0.0.1` pada Android hanya menuju laptop jika reverse sudah aktif. Aturan firewall dan jaringan tetap memengaruhi koneksi Wi-Fi/10.0.2.2. Pada komputer pengujian, port uji melalui 10.0.2.2 mengalami timeout; ADB reverse berhasil.
+
+6. Masuk menggunakan email dan password akun server. Role dibaca dari respons login, tanpa pemilih role demo.
+
+Opsional untuk database lokal: `php artisan db:seed --class=DemoSeeder`. Akun baru seeder adalah `admin@gmail.com`, `koordinator@gmail.com`, dan `relawan@gmail.com`, dengan password dari `DEMO_PASSWORD` atau fallback `RelawanDemo123!`. Seeder menjaga akun yang telah ada, sehingga password akun lama bisa berbeda. Pendaftaran di aplikasi membuat akun Relawan; Admin membuat akun Koordinator.
+
+URL default debug adalah `http://10.0.2.2:8000/api/`. Bisa diganti melalui pengaturan aplikasi atau saat build:
+
+```powershell
+.\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.10:8000/api/
+```
+
+Pengaturan server tersimpan di perangkat dan mengungguli default build. Ganti kembali lewat halaman masuk bila perlu. Prefiks API tetap `/api/`, tanpa `/v1`.
+
+## Perilaku aplikasi
+
+Data baca kegiatan/dashboard/Kegiatanku/tugas/dokumentasi/riwayat memakai `ReadCache` dalam ViewModel selama 30 detik, maksimal 64 respons. Kembali ke halaman yang sama selama cache masih berlaku tidak mengirim request ulang. Cache dipisah per server/akun/role/filter/halaman, dan dibersihkan ketika sesi berakhir. `auth/me`, pengguna Admin, dan daftar kehadiran tetap diambil dari server. Tombol **Muat ulang** memaksa pengambilan data halaman aktif. Aksi tulis tidak di-cache dan otomatis membatalkan cache terkait.
+
+Detail kegiatan menggunakan `my_registration` dari respons detail Laravel sehingga cukup satu request untuk mengetahui status pendaftaran dan kehadiran sendiri. Endpoint tugas/dokumentasi/peserta tetap dimuat ketika tabnya dibuka. Perubahan dari perangkat lain diambil saat halaman dimuat lagi setelah TTL 30 detik habis, atau segera lewat **Muat ulang**. Cache tidak menjalankan polling otomatis.
+
+
+- Login, pendaftaran, pemulihan sesi melalui `/auth/me`, edit profil, dan logout yang mencabut token perangkat.
+- Token dienkripsi AES-GCM menggunakan Android Keystore. Password tidak disimpan; backup aplikasi dinonaktifkan. Token terikat ke alamat server, dan perubahan server menghapus sesi lokal.
+- Respons 401 mengakhiri sesi. Validasi 422 ditampilkan pada field; 403/409 dan kegagalan koneksi menampilkan pesan tanpa menganggap aksi berhasil.
+- Daftar memakai paginasi server, pencarian, filter kategori/role, loading, kosong, serta tombol coba lagi. Request baca lama dibatalkan saat pindah halaman. Aksi tulis diblokir dari ketukan ganda dan tidak otomatis diulang.
+- Relawan: dashboard kontribusi, jelajah, daftar/batal sebelum mulai, Kegiatanku dari `/my/registrations`, tugas sendiri, ubah status tugas, absensi, dokumentasi, profil, dan riwayat. Catatan kegiatan yang diarsipkan tetap terlihat dalam Kegiatanku.
+- Koordinator: kegiatan milik sendiri, CRUD dan arsip massal, peserta, tugas dan penanggung jawab dari peserta aktif, arsip tugas, buka/tutup sesi absensi, unggah sampul/dokumentasi, edit keterangan, serta arsip foto.
+- Admin: dashboard lintas kegiatan, memilih koordinator aktif pada form kegiatan, mencari/filter pengguna, membuat akun dengan password, edit profil/role, serta aktif/nonaktif akun lain. Perubahan profil tidak mengirim ulang role yang sama agar sesi tidak tercabut tanpa perlu.
+- Form jadwal memakai DatePicker/TimePicker, dikirim ISO 8601 dengan zona waktu. Waktu dari server ditampilkan dalam zona perangkat.
+- Absensi memakai kode delapan karakter dari server. Kode hanya berada di memori; setelah proses aplikasi berakhir, koordinator membuka sesi baru untuk memperoleh kode baru. Pembukaan sesi baru menutup sesi sebelumnya.
+- Foto memakai OpenDocument, salinan sementara maksimal 5 MB, dan multipart `image` (JPEG/PNG/WebP). File sementara dibersihkan setelah upload. `storage:link` diperlukan untuk menampilkan media publik Laravel.
+- HTTP diizinkan untuk build debug lokal. Build release mewajibkan HTTPS dan menolak cleartext. Contoh: `-PapiBaseUrl=https://api.domainmu.id/api/`. Signing release dan deployment server belum disiapkan.
+
+`Hapus sesi lokal` tersedia ketika server tidak terjangkau. Ini hanya menghapus sesi pada perangkat, tanpa mencabut token di server. Gunakan Keluar untuk pencabutan server.
 
 ## Struktur kode
 
-- app/src/main/java/com/example/relawanku/MainActivity.kt: shell navigasi, lifecycle, splash, profil, riwayat, dan pemilih dokumentasi.
-- ui/PreviewState.kt: ViewModel dan contoh data untuk pratinjau.
-- ui/UiKit.kt: komponen UI native yang dipakai ulang.
-- ui/AuthScreens.kt: form masuk dan daftar.
-- ui/VolunteerHome.kt: beranda relawan.
-- ui/EventScreens.kt: daftar, detail, form, tugas, absensi, dan dokumentasi.
-- ui/ManagementScreens.kt: dashboard dan pengelolaan pengguna.
-- app/src/main/res/layout: XML shell, halaman scroll, dan kartu kegiatan.
-- app/src/main/res/values: token warna dan tema Material 3.
-- app/src/main/res/font: Nunito Regular 400, SemiBold 600, Bold 700 yang dibundel agar bisa dipakai offline.
+| Lokasi | Tanggung jawab |
+| --- | --- |
+| `data/ApiService.kt` | Kontrak endpoint Retrofit. |
+| `data/ApiClient.kt` | Konfigurasi HTTP, bearer, alamat/media, dan pesan error. |
+| `data/ReadCache.kt` | Cache baca sementara, TTL, isolasi akun, dan invalidasi selektif. |
+| `data/ApiModels.kt` | DTO, paginasi, status, serta konversi tanggal. |
+| `data/SessionStore.kt` | Sesi terenkripsi dan alamat server. |
+| `data/UploadPart.kt` | Validasi ukuran/jenis dan multipart foto. |
+| `MainActivity.kt` | Navigasi, lifecycle request, loading/retry, dan pemilih foto. |
+| `ui/AppState.kt` | State navigasi dan akun dari server; bukan database lokal. |
+| `ui/AuthScreens.kt`, `VolunteerHome.kt` | Autentikasi dan beranda. |
+| `ui/EventScreens.kt`, `ActivityActions.kt` | Kegiatan, peserta, tugas, absensi, dokumentasi. |
+| `ui/ManagementScreens.kt`, `AccountScreens.kt` | Dashboard, pengguna, profil, dan riwayat. |
+| `ui/FormTools.kt`, `UiKit.kt` | Komponen formulir dan UI yang dipakai ulang. |
+| `res/layout/screen_welcome.xml` | Welcome yang dapat diedit pada Design/Split. |
+| `res/values/strings_welcome.xml` | Teks Welcome. |
 
-## Pemeriksaan
+Lokasi Kotlin di atas berada di `app/src/main/java/com/example/relawanku/`. API referensi: [../docs/API.md](../docs/API.md).
 
-Dari folder android:
+## Pengujian
+
+Dari folder `android`:
 
 ```powershell
-.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 .\gradlew.bat :app:connectedDebugAndroidTest
-.\gradlew.bat :app:lintDebug
 ```
 
-Pengujian perangkat membutuhkan emulator/HP aktif. Jika ada beberapa perangkat, pilih emulator dengan environment ANDROID_SERIAL. Hasil verifikasi terakhir dicatat di ../todo.md.
+Unit test menggunakan MockWebServer untuk JSON login, bearer dan batas origin, paginasi, DELETE ber-body, multipart, validasi/error, URL media, waktu, dan PATCH dengan null eksplisit. Tes perangkat memeriksa Welcome XML, validasi login, enkripsi sesi, dan kegagalan koneksi.
 
-## Integrasi API berikutnya
+Satu tes integrasi dilewati kecuali argumen `integrationBaseUrl` dan `integrationPassword` diberikan. **Gunakan server dengan database dan storage uji yang terpisah**, karena tes membuat akun/kegiatan dan melakukan CRUD. Server uji harus menyediakan akun DemoSeeder dengan password yang sama. Contoh setelah server terisolasi berjalan pada port 8765:
 
-Jalankan MySQL di Laragon. Dari backend jalankan php artisan serve --host=0.0.0.0 --port=8000.
+```powershell
+adb reverse tcp:8765 tcp:8765
+.\gradlew.bat :app:connectedDebugAndroidTest `
+  -Pandroid.testInstrumentationRunnerArguments.integrationBaseUrl=http://127.0.0.1:8765/api/ `
+  -Pandroid.testInstrumentationRunnerArguments.integrationPassword=PASSWORD_DATABASE_UJI
+```
 
-- Emulator Android Studio: http://10.0.2.2:8000/api/
-- HP pada jaringan yang sama: http://IP-LAPTOP:8000/api/
+Alur integrasi mencakup pendaftaran, login tiga role, validasi kredensial salah, pendaftaran kegiatan, tugas dan statusnya, absensi berkode, upload/edit/arsip dokumentasi, edit kegiatan, tambah pengguna, penolakan akses admin bagi relawan, riwayat, serta token yang dicabut. Sebagian persiapan dan pemeriksaan memakai Retrofit langsung; tindakan pengguna utama dijalankan melalui UI. Hasil verifikasi dicatat di [../todo.md](../todo.md).
 
-Tambahkan Retrofit, izin INTERNET, konfigurasi HTTP khusus pengembangan, dan penyimpanan token sesuai rancangan autentikasi. Ganti sumber data PreviewState dengan repository API, lalu validasi akses seluruh role melalui Laravel. Panduan endpoint: ../docs/API.md.
+Batas pengujian: belum diverifikasi pada HP fisik/API 24, jaringan Wi-Fi pengguna, signing release, atau deployment publik. Draft formulir belum dipulihkan saat rotasi; data server dimuat ulang dan aksi tidak diulang otomatis.
 
 ## Aset dan lisensi
 

@@ -1,596 +1,409 @@
 package com.example.relawanku.ui
 
-import android.net.Uri
-import android.text.Editable
 import android.text.InputType
-import android.text.TextWatcher
-import android.widget.*
+import android.widget.CheckBox
+import android.widget.LinearLayout
 import com.example.relawanku.MainActivity
 import com.example.relawanku.R
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.example.relawanku.data.*
 
 class EventScreens(private val a: MainActivity) {
-    private val u = a.ui
     private val s = a.state
+    private val u = a.ui
 
     fun listing() {
+        val joined = s.tab == "joined"
         val manager = s.role != Role.RELAWAN
-        val mine = s.tab == "joined"
         val p =
             a.page(
-                if (mine) "Kegiatanku" else if (manager) "Kelola kegiatan" else "Temukan kegiatan",
-                if (mine) "Tempat semua langkah baikmu berkumpul."
-                else if (manager) "Kelola setiap langkah, hadirkan dampak."
-                else "Pilih kegiatan yang dekat dengan hatimu.",
+                if (joined) "Kegiatanku" else if (manager) "Kelola kegiatan" else "Temukan peranmu",
+                if (joined) "Pendaftaran dan riwayat partisipasimu."
+                else "Cari kegiatan yang sesuai dengan kepedulianmu.",
             )
-        if (manager) {
-            u.button(p, "Tambah kegiatan") {
+        if (manager)
+            u.button(p, "Buat kegiatan baru") {
                 s.selectedEvent = 0
                 a.navigate("form")
             }
-            u.gap(p, 16)
+        if (!joined) {
+            val search = u.field(p, "Cari nama atau lokasi", s.query)
+            u.button(p, "Cari", true) {
+                s.query = search.second.text.toString().trim()
+                a.render()
+            }
+            u.chips(p, listOf("Semua", "Lingkungan", "Pendidikan", "Sosial"), s.category) {
+                s.category = it
+                a.render()
+            }
         }
-        val (_, search) = u.field(p, "Cari nama atau lokasi", s.query, InputType.TYPE_CLASS_TEXT)
-        val results = u.column()
-        val chosen = mutableSetOf<Int>()
-        var deleteButton: com.google.android.material.button.MaterialButton? = null
-        fun showResults() {
-            results.removeAllViews()
-            val events =
-                s.events.filter {
-                    (!mine || it.id in s.joined) &&
-                        (s.category == "Semua" || it.category == s.category) &&
-                        (s.query.isBlank() ||
-                            it.title.contains(s.query, true) ||
-                            it.location.contains(s.query, true))
-                }
-            if (events.isEmpty())
-                u.empty(
-                    results,
-                    if (mine) "Belum ada kegiatan di sini" else "Kegiatan belum ditemukan",
-                    if (mine) "Jelajahi kegiatan dan mulai langkah pertamamu."
-                    else "Coba kata kunci lain atau ubah kategori.",
-                )
-            for (event in events) {
-                if (manager)
-                    results.addView(
-                        CheckBox(a).apply {
-                            text = "Pilih kegiatan ini"
-                            typeface = u.font(600)
-                            setTextColor(u.muted)
-                            isChecked = event.id in chosen
-                            setOnCheckedChangeListener { _, checked ->
-                                if (checked) chosen.add(event.id) else chosen.remove(event.id)
-                                deleteButton?.isEnabled = chosen.isNotEmpty()
-                                deleteButton?.text = "Arsipkan pilihan (${chosen.size})"
+        val area = u.column()
+        p.addView(area)
+        if (joined) {
+            fun load(page: Int) {
+                a.load(area, { a.api.mine(page) }) { result ->
+                    if (result.data.isEmpty())
+                        u.empty(
+                            area,
+                            "Belum ada pendaftaran",
+                            "Jelajahi kegiatan dan mulai ambil peran.",
+                        )
+                    result.data.forEach { r ->
+                        r.activity?.let { event ->
+                            val card = u.column()
+                            area.addView(card)
+                            u.badge(
+                                card,
+                                if (r.attendance != null) "Sudah hadir" else statusLabel(r.status),
+                            )
+                            u.gap(card, 8)
+                            u.eventCard(card, event, r.status == "registered") {
+                                if (event.deletedAt != null)
+                                    a.notice(
+                                        "Kegiatan telah diarsipkan. Catatan partisipasimu tetap tersimpan."
+                                    )
+                                else a.openEvent(event.id)
                             }
                         }
-                    )
-                u.eventCard(results, event, event.id in s.joined) { a.openEvent(event.id) }
-            }
-            if (mine && events.isEmpty())
-                u.button(results, "Jelajahi kegiatan", true) { a.selectTab("explore") }
-        }
-        u.chips(p, listOf("Semua", "Lingkungan", "Pendidikan", "Sosial"), s.category) {
-            s.category = it
-            showResults()
-        }
-        if (manager) {
-            deleteButton =
-                u.button(p, "Arsipkan pilihan (0)", true) {
-                    a.confirm(
-                        "Arsipkan ${chosen.size} kegiatan?",
-                        "Kegiatan pilihan akan dihapus dari daftar contoh lokal.",
-                        "Arsipkan",
-                    ) {
-                        s.archive(chosen)
-                        a.render()
-                        a.notice("Kegiatan pilihan diarsipkan dalam pratinjau.")
                     }
+                    a.pagination(area, result) { load(it) }
                 }
-            deleteButton!!.isEnabled = false
-            u.gap(p, 12)
-        }
-        val stateRow = u.row()
-        stateRow.addView(
-            u.text(
-                "${if(mine)"KEGIATAN YANG DIIKUTI" else "KEGIATAN TERSEDIA"}",
-                12,
-                700,
-                u.primary,
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f),
-        )
-        stateRow.addView(
-            u.iconAction(R.drawable.ic_filter, "Pratinjau kondisi daftar") {
-                MaterialAlertDialogBuilder(a)
-                    .setTitle("Pratinjau kondisi daftar")
-                    .setItems(arrayOf("Data tersedia", "Loading", "Data kosong", "Gagal memuat")) {
-                        _,
-                        index ->
-                        if (index == 0) showResults()
-                        else {
-                            results.removeAllViews()
-                            when (index) {
-                                1 -> {
-                                    results.addView(ProgressBar(a))
-                                    u.gap(results)
-                                    results.addView(
-                                        u.text("Sedang memuat kegiatan…", 14, 400, u.muted)
-                                    )
+            }
+            load(1)
+        } else {
+            val selected = mutableSetOf<Long>()
+            if (manager)
+                u.button(p, "Arsipkan kegiatan terpilih", true) {
+                    if (selected.isEmpty()) a.notice("Pilih kegiatan yang akan diarsipkan.")
+                    else
+                        a.confirm(
+                            "Arsipkan ${selected.size} kegiatan?",
+                            "Kegiatan tidak lagi muncul dalam daftar aktif.",
+                            "Arsipkan",
+                        ) {
+                            a.write(a.api.deleteActivities(mapOf("ids" to selected.toList()))) {
+                                a.render()
+                                a.notice("Kegiatan terpilih diarsipkan.")
+                            }
+                        }
+                }
+            fun load(page: Int) {
+                selected.clear()
+                val query = mutableMapOf("page" to "$page", "search" to s.query)
+                if (s.category != "Semua") query["category"] = s.category
+                if (s.role == Role.KOORDINATOR) query["mine"] = "1"
+                a.load(area, { a.api.activities(query) }) { result ->
+                    if (result.data.isEmpty())
+                        u.empty(
+                            area,
+                            "Kegiatan belum ditemukan",
+                            "Coba kata kunci lain atau ubah kategori.",
+                        )
+                    result.data.forEach { event ->
+                        s.events[event.id] = event
+                        if (s.canManage(event))
+                            area.addView(
+                                CheckBox(a).apply {
+                                    text = "Pilih ${event.title}"
+                                    typeface = u.font()
+                                    setOnCheckedChangeListener { _, checked ->
+                                        if (checked) selected.add(event.id)
+                                        else selected.remove(event.id)
+                                    }
                                 }
-                                2 ->
-                                    u.empty(
-                                        results,
-                                        "Belum ada kegiatan",
-                                        "Kegiatan baru akan muncul di sini.",
-                                    )
-                                else ->
-                                    u.empty(
-                                        results,
-                                        "Kegiatan belum bisa dimuat",
-                                        "Contoh tampilan saat koneksi bermasalah. Coba kembali.",
-                                    )
-                            }
-                            u.button(results, "Coba lagi", true) { showResults() }
-                        }
+                            )
+                        u.eventCard(area, event, false) { a.openEvent(event.id) }
                     }
-                    .show()
-            }
-        )
-        p.addView(stateRow)
-        u.gap(p, 16)
-        p.addView(results)
-        search.addTextChangedListener(
-            object : TextWatcher {
-                override fun beforeTextChanged(
-                    t: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int,
-                ) {}
-
-                override fun onTextChanged(t: CharSequence?, start: Int, before: Int, count: Int) {
-                    s.query = t.toString()
-                    showResults()
+                    a.pagination(area, result) { load(it) }
                 }
-
-                override fun afterTextChanged(e: Editable?) {}
             }
-        )
-        showResults()
+            load(1)
+        }
+        u.button(p, "Muat ulang", true) { a.refresh() }
     }
 
     fun detail() {
-        val e =
-            s.event()
-                ?: run {
-                    a.navigate("main")
-                    return
-                }
-        val manager = s.role != Role.RELAWAN
         val p = a.page(back = true)
-        val image =
-            ImageView(a).apply {
-                setImageResource(e.image)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                contentDescription = "Ilustrasi ${e.category}"
-                background = u.background(u.color(R.color.sage), 22)
-                clipToOutline = true
+        val area = u.column()
+        p.addView(area)
+        a.load(area, { a.api.activity(s.selectedEvent) }) { response ->
+            val event = response.data
+            if (event == null) {
+                u.empty(area, "Kegiatan tidak ditemukan", "Muat ulang daftar kegiatan.")
+                return@load
             }
-        p.addView(image, LinearLayout.LayoutParams(-1, u.dp(210)))
-        u.gap(p, 20)
-        u.badge(p, e.category)
-        u.gap(p, 12)
-        p.addView(u.text(e.title, 28, 700))
-        u.gap(p, 10)
-        p.addView(u.text("oleh Komunitas Relawanku", 14, 400, u.muted))
-        u.gap(p, 20)
-        val meta = u.panel(p)
-        u.meta(meta, R.drawable.ic_calendar, e.date, e.time)
-        u.meta(meta, R.drawable.ic_pin, e.location, "Lokasi kegiatan")
-        u.meta(
-            meta,
-            R.drawable.ic_people,
-            "${e.participants} dari ${e.quota} relawan",
-            "${(e.quota-e.participants).coerceAtLeast(0)} tempat tersisa",
+            s.events[event.id] = event
+            content(area, event, event.myRegistration)
+        }
+    }
+
+    private fun content(p: LinearLayout, event: ActivityDto, registration: RegistrationDto?) {
+        val manage = s.canManage(event)
+        val participant =
+            registration != null &&
+                (registration.status == "registered" || registration.attendance != null)
+        val image =
+            android.widget.ImageView(a).apply {
+                layoutParams = LinearLayout.LayoutParams(-1, u.dp(190))
+                contentDescription =
+                    if (event.coverUrl == null) "Ilustrasi kategori kegiatan" else "Sampul kegiatan"
+            }
+        u.image(image, event.coverUrl, event.image)
+        p.addView(image)
+        u.gap(p)
+        u.badge(p, statusLabel(event.status))
+        u.gap(p)
+        p.addView(u.text(event.title, 26, 700))
+        u.gap(p, 8)
+        p.addView(
+            u.text(
+                "${event.category} · ${event.participants}/${event.quota} relawan",
+                14,
+                400,
+                u.muted,
+            )
         )
-        val tabs =
-            if (manager) listOf("Ringkasan", "Peserta", "Tugas", "Absensi", "Dokumentasi")
-            else if (e.id in s.joined) listOf("Ringkasan", "Tugas", "Absensi", "Dokumentasi")
-            else listOf("Ringkasan")
+        val tabs = mutableListOf("Ringkasan")
+        if (manage) tabs.add("Peserta")
+        if (manage || participant) tabs.addAll(listOf("Tugas", "Absensi", "Dokumentasi"))
+        if (s.detailTab !in tabs) s.detailTab = "Ringkasan"
+        u.gap(p)
         u.chips(p, tabs, s.detailTab) {
             s.detailTab = it
             a.render()
         }
         when (s.detailTab) {
-            "Peserta" -> participants(p, e)
-            "Tugas" -> tasks(p, e, manager)
-            "Absensi" -> attendance(p, e, manager)
-            "Dokumentasi" -> documentations(p, e, manager)
+            "Peserta" -> ActivityActions(a, event).participants(p)
+            "Tugas" -> ActivityActions(a, event).tasks(p, manage)
+            "Absensi" -> ActivityActions(a, event).attendance(p, manage, registration)
+            "Dokumentasi" -> ActivityActions(a, event).photos(p, manage)
             else -> {
+                u.meta(p, R.drawable.ic_calendar, event.date, event.time)
+                u.meta(p, R.drawable.ic_pin, "Lokasi", event.location)
+                u.meta(p, R.drawable.ic_person, "Koordinator", event.coordinator?.name ?: "—")
                 u.section(p, "Tentang kegiatan")
-                p.addView(u.text(e.description))
-                u.section(p, "Yang perlu disiapkan")
+                p.addView(u.text(event.description, 15))
+                u.section(p, "Persyaratan")
                 p.addView(
                     u.text(
-                        "Bawa botol minum pribadi, datang tepat waktu, dan ikuti arahan koordinator.",
-                        16,
-                        400,
-                        u.color(R.color.body),
-                    )
-                )
-                u.gap(p, 20)
-                if (manager) {
-                    u.button(p, "Edit kegiatan") { a.navigate("form") }
-                    u.button(
-                        p,
-                        if (e.completed) "Buka kembali kegiatan" else "Tandai kegiatan selesai",
-                        true,
-                    ) {
-                        e.completed = !e.completed
-                        a.render()
-                        a.notice("Status contoh diperbarui.")
-                    }
-                    u.button(p, "Arsipkan kegiatan", true) {
-                        a.confirm(
-                            "Arsipkan kegiatan?",
-                            e.title + " akan dihapus dari daftar contoh.",
-                            "Arsipkan",
-                        ) {
-                            s.archive(setOf(e.id))
-                            a.navigate("main")
-                        }
-                    }
-                } else if (e.id in s.joined) {
-                    u.badge(
-                        p,
-                        "Kamu sudah terdaftar",
-                        u.color(R.color.success_bg),
-                        u.color(R.color.success),
-                    )
-                    u.button(p, "Lihat tugas saya") {
-                        s.detailTab = "Tugas"
-                        a.render()
-                    }
-                    if (e.id !in s.attended && !e.completed)
-                        u.button(p, "Batalkan pendaftaran", true) {
-                            a.confirm(
-                                "Batalkan pendaftaran?",
-                                "Tempatmu pada kegiatan ini akan tersedia untuk relawan lain.",
-                                "Batalkan pendaftaran",
-                            ) {
-                                s.leave(e)
-                                a.render()
-                                a.notice("Pendaftaran contoh dibatalkan.")
-                            }
-                        }
-                } else {
-                    val b =
-                        u.button(
-                            p,
-                            when {
-                                e.completed -> "Kegiatan selesai"
-                                e.participants >= e.quota -> "Kuota penuh"
-                                else -> "Daftar kegiatan"
-                            },
-                        ) {
-                            a.confirm(
-                                "Siap ikut berkontribusi?",
-                                "Daftar sebagai relawan pada ${e.title}.",
-                                "Ya, daftar",
-                            ) {
-                                if (s.join(e)) {
-                                    a.render()
-                                    a.notice("Kamu berhasil terdaftar pada kegiatan contoh.")
-                                } else a.notice("Pendaftaran tidak tersedia.")
-                            }
-                        }
-                    b.isEnabled = !e.completed && e.participants < e.quota
-                }
-            }
-        }
-        u.gap(p, 18)
-        p.addView(u.text("Data contoh · perubahan hanya untuk pratinjau UI", 12, 400, u.muted))
-    }
-
-    private fun participants(p: LinearLayout, e: VolunteerEvent) {
-        u.section(p, "Peserta kegiatan")
-        p.addView(u.text("Contoh tampilan daftar peserta dan status kehadiran.", 14, 400, u.muted))
-        u.gap(p)
-        listOf("Rasyid Saputra", "Rahma Azka", "Nurul").forEachIndexed { i, name ->
-            val c = u.panel(p)
-            u.meta(
-                c,
-                R.drawable.ic_person,
-                name,
-                if (i == 0 && e.id in s.attended) "Sudah hadir" else "Terdaftar",
-            )
-            u.button(c, "Lihat detail peserta", true) {
-                MaterialAlertDialogBuilder(a)
-                    .setTitle(name)
-                    .setMessage("Relawan contoh pada kegiatan ${e.title}.\n\nStatus: terdaftar")
-                    .setPositiveButton("Tutup", null)
-                    .show()
-            }
-        }
-    }
-
-    private fun tasks(p: LinearLayout, e: VolunteerEvent, manager: Boolean) {
-        u.section(p, if (manager) "Pembagian tugas" else "Tugas untukmu")
-        val task = s.tasks[e.id]
-        if (task == null)
-            u.empty(p, "Belum ada tugas", "Koordinator akan membagikan tugas kegiatan di sini.")
-        else {
-            val c = u.panel(p)
-            u.badge(c, if (e.id in s.finishedTasks) "Selesai" else "Perlu dikerjakan")
-            u.gap(c)
-            c.addView(u.text(task, 18, 700))
-            u.gap(c, 8)
-            c.addView(u.text("Penanggung jawab: ${s.displayName}", 14, 400, u.muted))
-            if (!manager)
-                u.button(
-                    c,
-                    if (e.id in s.finishedTasks) "Tandai belum selesai" else "Tandai selesai",
-                ) {
-                    if (e.id in s.finishedTasks) s.finishedTasks.remove(e.id)
-                    else s.finishedTasks.add(e.id)
-                    s.history.add(0, "Memperbarui status tugas ${e.title}")
-                    a.render()
-                    a.notice("Status tugas contoh diperbarui.")
-                }
-        }
-        if (manager) {
-            u.button(p, if (task == null) "Bagikan tugas" else "Edit pembagian tugas") {
-                val form = u.column(24)
-                val (box, input) = u.field(form, "Nama tugas", task ?: "")
-                form.addView(
-                    u.text(
-                        "Diberikan kepada ${s.displayName}, peserta contoh pada kegiatan ini.",
-                        14,
+                        event.requirements?.takeIf { it.isNotBlank() }
+                            ?: "Tidak ada persyaratan tambahan.",
+                        15,
                         400,
                         u.muted,
                     )
                 )
-                val dialog =
-                    MaterialAlertDialogBuilder(a)
-                        .setTitle("Bagikan tugas contoh")
-                        .setView(form)
-                        .setNegativeButton("Batal", null)
-                        .setPositiveButton("Simpan", null)
-                        .create()
-                dialog.setOnShowListener {
-                    dialog.getButton(-1).setOnClickListener {
-                        val value = input.text.toString().trim()
-                        box.error = if (value.isBlank()) "Nama tugas wajib diisi" else null
-                        if (value.isNotBlank()) {
-                            s.tasks[e.id] = value
-                            dialog.dismiss()
-                            a.render()
-                            a.notice("Tugas contoh disimpan.")
+                u.gap(p)
+                p.addView(
+                    u.text("Batas pendaftaran: ${Dates.full(event.registrationDeadline)}", 14, 600)
+                )
+                if (s.role == Role.RELAWAN) {
+                    if (registration?.status == "registered") {
+                        u.gap(p)
+                        u.badge(
+                            p,
+                            if (registration.attendance != null) "Kehadiran tercatat"
+                            else "Kamu sudah terdaftar",
+                        )
+                        if (
+                            registration.attendance == null &&
+                                (Dates.parse(event.startsAt)?.time ?: 0) >
+                                    System.currentTimeMillis()
+                        )
+                            u.button(p, "Batalkan pendaftaran", true) {
+                                a.confirm(
+                                    "Batalkan pendaftaran?",
+                                    "Tempatmu akan tersedia untuk relawan lain.",
+                                    "Batalkan pendaftaran",
+                                ) {
+                                    a.write(a.api.leave(event.id)) {
+                                        a.render()
+                                        a.notice("Pendaftaran dibatalkan.")
+                                    }
+                                }
+                            }
+                    } else if (event.registrationOpen())
+                        u.button(p, "Daftar kegiatan") {
+                            a.confirm(
+                                "Daftar kegiatan?",
+                                "Pastikan kamu dapat hadir sesuai jadwal.",
+                                "Ya, daftar",
+                            ) {
+                                a.write(a.api.join(event.id)) {
+                                    a.render()
+                                    a.notice("Pendaftaran berhasil.")
+                                }
+                            }
+                        }
+                    else
+                        u.empty(
+                            p,
+                            "Pendaftaran tidak tersedia",
+                            "Periksa jadwal, status, dan sisa kuota kegiatan.",
+                        )
+                }
+                if (manage) {
+                    u.button(p, "Edit kegiatan", true) { a.navigate("form") }
+                    u.button(p, "Ubah foto sampul", true) { a.pickPhoto(true) }
+                    u.button(p, "Arsipkan kegiatan", true) {
+                        a.confirm(
+                            "Arsipkan kegiatan?",
+                            "Riwayat partisipasi tetap tersimpan.",
+                            "Arsipkan",
+                        ) {
+                            a.write(a.api.deleteActivity(event.id)) {
+                                s.events.remove(event.id)
+                                a.selectTab("explore")
+                                a.notice("Kegiatan diarsipkan.")
+                            }
                         }
                     }
                 }
-                dialog.show()
-            }
-            if (task != null)
-                u.button(p, "Hapus tugas", true) {
-                    a.confirm("Hapus tugas?", "Tugas ini akan dihapus dari data contoh.", "Hapus") {
-                        s.tasks.remove(e.id)
-                        s.finishedTasks.remove(e.id)
-                        a.render()
-                    }
-                }
-        }
-    }
-
-    private fun attendance(p: LinearLayout, e: VolunteerEvent, manager: Boolean) {
-        u.section(p, "Absensi kegiatan")
-        if (manager) {
-            val c = u.panel(p, u.color(R.color.soft))
-            c.addView(u.icon(R.drawable.ic_check, 36))
-            u.gap(c)
-            c.addView(
-                u.text(
-                    if (e.id in s.sessions) "Sesi contoh dibuka" else "Mulai sesi absensi",
-                    20,
-                    700,
-                )
-            )
-            u.gap(c, 8)
-            c.addView(
-                u.text(
-                    if (e.id in s.sessions)
-                        "Kode contoh: RW2026\nBagikan kode kepada peserta kegiatan."
-                    else "Buka sesi untuk melihat contoh kode yang dibagikan ke relawan.",
-                    16,
-                    400,
-                    u.muted,
-                )
-            )
-            u.button(p, if (e.id in s.sessions) "Tutup sesi contoh" else "Buka sesi contoh") {
-                if (e.id in s.sessions) s.sessions.remove(e.id) else s.sessions.add(e.id)
-                a.render()
-            }
-            u.section(p, "Rekap kehadiran")
-            u.meta(
-                p,
-                R.drawable.ic_people,
-                if (e.id in s.attended) "1 peserta contoh hadir" else "Belum ada kehadiran contoh",
-                if (e.id in s.attended) s.displayName else "Kehadiran muncul setelah absensi.",
-            )
-        } else if (e.id in s.attended) {
-            val c = u.panel(p, u.color(R.color.success_bg))
-            c.addView(u.icon(R.drawable.ic_check, 40))
-            u.gap(c)
-            c.addView(u.text("Kehadiranmu tercatat!", 20, 700))
-            u.gap(c, 8)
-            c.addView(u.text("Terima kasih sudah hadir dan ambil bagian.", 16, 400, u.muted))
-        } else {
-            p.addView(
-                u.text(
-                    "Masukkan kode yang dibagikan koordinator. Untuk mencoba UI, gunakan kode RW2026.",
-                    16,
-                    400,
-                    u.muted,
-                )
-            )
-            u.gap(p)
-            val (box, code) =
-                u.field(
-                    p,
-                    "Kode absensi",
-                    type = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS,
-                )
-            u.button(p, "Konfirmasi kehadiran") {
-                box.error =
-                    if (code.text.toString().trim().uppercase() != "RW2026")
-                        "Kode contoh belum sesuai. Gunakan RW2026."
-                    else null
-                if (box.error == null) {
-                    s.attended.add(e.id)
-                    s.history.add(0, "Melakukan absensi ${e.title}")
-                    a.render()
-                    a.notice("Absensi contoh berhasil.")
-                }
             }
         }
-    }
-
-    private fun documentations(p: LinearLayout, e: VolunteerEvent, manager: Boolean) {
-        u.section(p, "Momen kebaikan")
-        p.addView(u.text("Dokumentasi yang mengabadikan langkah bersama.", 14, 400, u.muted))
-        u.gap(p)
-        val images = s.photos[e.id].orEmpty()
-        if (images.isEmpty())
-            u.empty(p, "Belum ada dokumentasi", "Foto kegiatan akan ditampilkan di sini.")
-        images.forEach { uri ->
-            val c = u.panel(p)
-            val image =
-                ImageView(a).apply {
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    contentDescription = "Dokumentasi kegiatan"
-                }
-            try {
-                image.setImageURI(Uri.parse(uri))
-            } catch (_: SecurityException) {
-                image.setImageResource(e.image)
-            }
-            c.addView(image, LinearLayout.LayoutParams(-1, u.dp(190)))
-            u.gap(c, 10)
-            c.addView(u.text("Momen ${e.title}", 14, 600))
-            if (manager)
-                u.button(c, "Hapus foto contoh", true) {
-                    a.confirm(
-                        "Hapus dokumentasi?",
-                        "Foto di perangkatmu tetap tersimpan.",
-                        "Hapus dari pratinjau",
-                    ) {
-                        s.photos[e.id]?.remove(uri)
-                        a.render()
-                    }
-                }
-        }
-        if (manager) u.button(p, "Pilih foto dokumentasi") { a.pickPhoto() }
+        u.button(p, "Muat ulang", true) { a.refresh() }
     }
 
     fun form() {
-        val original = s.event()
-        val fresh = s.selectedEvent == 0
+        val event = s.events[s.selectedEvent]
+        if (event != null && !s.canManage(event)) {
+            a.navigate("main")
+            return
+        }
         val p =
             a.page(
-                if (fresh) "Buat kegiatan" else "Edit kegiatan",
-                "Rangkai kegiatan yang menggerakkan kebaikan.",
+                if (event == null) "Buat kegiatan baru" else "Edit kegiatan",
+                "Isi jadwal dan informasi kegiatan.",
                 true,
             )
-        val (titleBox, title) =
-            u.field(p, "Nama kegiatan", if (fresh) "" else original?.title.orEmpty())
-        val (descBox, desc) =
+        if (s.role == Role.ADMIN) {
+            val area = u.column()
+            p.addView(area)
+            area.addView(u.text("Memuat koordinator…"))
+            a.allPages(
+                {
+                    a.api.users(
+                        mapOf("role" to "koordinator", "per_page" to "100", "page" to "$it")
+                    )
+                },
+                failure = { error ->
+                    area.removeAllViews()
+                    u.empty(area, "Koordinator belum dapat dimuat", error.message)
+                    u.button(area, "Coba lagi", true) { a.render() }
+                },
+            ) { users ->
+                area.removeAllViews()
+                activityForm(
+                    area,
+                    event,
+                    users.filter { it.active || it.id == event?.coordinatorId },
+                )
+            }
+        } else activityForm(p, event, emptyList())
+    }
+
+    private fun activityForm(p: LinearLayout, event: ActivityDto?, coordinators: List<ApiUser>) {
+        val f = FormTools(a)
+        val title = u.field(p, "Nama kegiatan", event?.title.orEmpty())
+        val desc =
             u.field(
                 p,
                 "Deskripsi",
-                if (fresh) "" else original?.description.orEmpty(),
+                event?.description.orEmpty(),
                 InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE,
             )
-        val (locationBox, location) =
-            u.field(p, "Lokasi", if (fresh) "" else original?.location.orEmpty())
-        val (quotaBox, quota) =
+        val category = u.field(p, "Kategori", event?.category ?: "Lingkungan")
+        val location = u.field(p, "Lokasi", event?.location.orEmpty())
+        val quota =
             u.field(
                 p,
                 "Kuota relawan",
-                if (fresh) "" else original?.quota?.toString().orEmpty(),
+                event?.quota?.toString().orEmpty(),
                 InputType.TYPE_CLASS_NUMBER,
             )
-        val (dateBox, date) =
+        val requirements =
             u.field(
                 p,
-                "Tanggal kegiatan",
-                if (fresh) "Sabtu, 28 November 2026" else original?.date.orEmpty(),
+                "Persyaratan",
+                event?.requirements.orEmpty(),
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE,
             )
-        val (timeBox, time) =
-            u.field(
+        val start = f.date(p, "Mulai", event?.startsAt.orEmpty())
+        val end = f.date(p, "Selesai", event?.endsAt.orEmpty())
+        val deadline = f.date(p, "Batas pendaftaran", event?.registrationDeadline.orEmpty())
+        val status =
+            f.choice(
                 p,
-                "Waktu kegiatan",
-                if (fresh) "08.00 – 12.00 WIB" else original?.time.orEmpty(),
+                "Status",
+                listOf(
+                    "draft" to "Draft",
+                    "open" to "Buka pendaftaran",
+                    "closed" to "Tutup pendaftaran",
+                    "completed" to "Selesai",
+                    "cancelled" to "Dibatalkan",
+                ),
+                event?.status ?: "draft",
             )
-        var category = if (fresh) "Lingkungan" else original?.category ?: "Lingkungan"
-        p.addView(u.text("Kategori", 14, 600))
-        u.chips(p, listOf("Lingkungan", "Pendidikan", "Sosial"), category) { category = it }
+        val coordinator =
+            if (s.role == Role.ADMIN)
+                f.choice(
+                    p,
+                    "Koordinator",
+                    coordinators.map { it.id.toString() to "${it.name} (${it.email})" },
+                    event?.coordinatorId?.toString().orEmpty(),
+                )
+            else null
+        val fields =
+            mapOf(
+                    "title" to title.first,
+                    "description" to desc.first,
+                    "category" to category.first,
+                    "location" to location.first,
+                    "quota" to quota.first,
+                    "requirements" to requirements.first,
+                    "starts_at" to start.box,
+                    "ends_at" to end.box,
+                    "registration_deadline" to deadline.box,
+                    "status" to status.box,
+                )
+                .toMutableMap()
+        coordinator?.let { fields["coordinator_id"] = it.box }
         u.button(p, "Simpan kegiatan") {
-            val t = title.text.toString().trim()
-            val d = desc.text.toString().trim()
-            val l = location.text.toString().trim()
-            val q = quota.text.toString().toIntOrNull()
-            titleBox.error = if (t.isBlank()) "Nama kegiatan wajib diisi" else null
-            descBox.error = if (d.isBlank()) "Deskripsi wajib diisi" else null
-            locationBox.error = if (l.isBlank()) "Lokasi wajib diisi" else null
-            quotaBox.error =
-                when {
-                    q == null || q < 1 -> "Kuota minimal 1 relawan"
-                    !fresh && q < (original?.participants ?: 0) ->
-                        "Kuota tidak boleh kurang dari peserta terdaftar"
-                    else -> null
-                }
-            dateBox.error = if (date.text.toString().isBlank()) "Tanggal wajib diisi" else null
-            timeBox.error = if (time.text.toString().isBlank()) "Waktu wajib diisi" else null
-            if (
-                listOf(titleBox, descBox, locationBox, quotaBox, dateBox, timeBox).all {
-                    it.error == null
-                }
-            ) {
-                if (fresh) {
-                    val id = (s.events.maxOfOrNull { it.id } ?: 0) + 1
-                    s.events.add(
-                        0,
-                        VolunteerEvent(
-                            id,
-                            t,
-                            category,
-                            l,
-                            q!!,
-                            0,
-                            d,
-                            date.text.toString(),
-                            time.text.toString(),
-                        ),
-                    )
-                    s.selectedEvent = id
-                } else
-                    original?.apply {
-                        this.title = t
-                        this.description = d
-                        this.location = l
-                        this.quota = q!!
-                        this.category = category
-                        this.date = date.text.toString()
-                        this.time = time.text.toString()
-                    }
-                s.detailTab = "Ringkasan"
-                s.history.add(0, "Menyimpan kegiatan $t")
-                a.navigate("detail")
-                a.notice("Kegiatan contoh disimpan di sesi pratinjau.")
+            fields.values.forEach { it.error = null }
+            listOf(title, desc, category, location).forEach {
+                if (it.second.text.toString().isBlank()) it.first.error = "Wajib diisi"
+            }
+            val count = quota.second.text.toString().toIntOrNull()
+            if (count == null || count !in 1..100000) quota.first.error = "Kuota 1–100000"
+            listOf(start, end, deadline).forEach {
+                if (it.value.isBlank()) it.box.error = "Pilih tanggal dan waktu"
+            }
+            if (coordinator != null && coordinator.value.toLongOrNull() == null)
+                coordinator.box.error = "Pilih koordinator aktif"
+            if (fields.values.any { it.error != null }) return@button
+            val body =
+                mutableMapOf<String, Any?>(
+                    "title" to title.second.text.toString().trim(),
+                    "description" to desc.second.text.toString().trim(),
+                    "category" to category.second.text.toString().trim(),
+                    "location" to location.second.text.toString().trim(),
+                    "quota" to count,
+                    "requirements" to requirements.second.text.toString().trim().ifEmpty { null },
+                    "starts_at" to start.value,
+                    "ends_at" to end.value,
+                    "registration_deadline" to deadline.value,
+                    "status" to status.value,
+                )
+            coordinator?.let { body["coordinator_id"] = it.value.toLong() }
+            val call =
+                if (event == null) a.api.createActivity(body)
+                else a.api.updateActivity(event.id, body)
+            a.write(call, fields) { response ->
+                response.data?.let { saved ->
+                    s.events[saved.id] = saved
+                    a.openEvent(saved.id)
+                    a.notice("Kegiatan disimpan.")
+                } ?: a.notice("Respons server tidak lengkap.")
             }
         }
-        u.button(p, "Batal", true) { a.navigate(if (fresh) "main" else "detail") }
     }
 }

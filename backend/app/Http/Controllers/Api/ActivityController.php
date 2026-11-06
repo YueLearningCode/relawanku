@@ -69,7 +69,18 @@ class ActivityController extends Controller
     {
         ActivityAccess::view($request->user(), $activity);
 
-        return response()->json(['data' => $activity->load('coordinator')->loadCount('activeRegistrations')]);
+        $activity->load('coordinator')->loadCount('activeRegistrations');
+        $registration = null;
+        if ($request->user()->role === 'relawan') {
+            $registration = $activity->registrations()
+                ->select(['id', 'activity_id', 'user_id', 'status', 'registered_at', 'cancelled_at'])
+                ->where('user_id', $request->user()->id)
+                ->with('attendance:id,registration_id,checked_in_at')
+                ->first();
+        }
+        $activity->setAttribute('my_registration', $registration);
+
+        return response()->json(['data' => $activity]);
     }
 
     public function update(ActivityRequest $request, Activity $activity): JsonResponse

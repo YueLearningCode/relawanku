@@ -1,222 +1,225 @@
 package com.example.relawanku.ui
 
-import android.text.Editable
 import android.text.InputType
-import android.text.TextWatcher
 import android.util.Patterns
-import android.widget.LinearLayout
 import com.example.relawanku.MainActivity
-import com.example.relawanku.R
+import com.example.relawanku.data.*
 
 class ManagementScreens(private val a: MainActivity) {
     private val u = a.ui
     private val s = a.state
 
     fun dashboard() {
-        val admin = s.role == Role.ADMIN
-        val p = a.page()
-        val row = u.row()
-        row.addView(u.icon(R.drawable.ic_leaf, 26))
-        row.addView(u.text("  relawanku", 20, 700, u.primary), LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(u.iconAction(R.drawable.ic_person, "Buka profil") { a.selectTab("profile") })
-        p.addView(row)
-        u.gap(p, 22)
-        u.badge(p, if (admin) "RUANG ADMIN" else "RUANG KOORDINATOR")
-        u.gap(p, 16)
-        p.addView(
-            u.text(
-                if (admin) "Pantau dampak\nkebaikan bersama."
-                else "Kelola kegiatan,\ntumbuhkan dampak.",
-                28,
-                700,
+        val p =
+            a.page(
+                "Dashboard ${s.role.label}",
+                "Halo, ${s.displayName}. Kelola kegiatan dan kontribusi bersama.",
             )
-        )
-        u.gap(p, 10)
-        p.addView(
-            u.text(
-                if (admin) "Ringkasan pengguna dan seluruh kegiatan."
-                else "Semua kegiatanmu, dalam satu tempat.",
-                16,
-                400,
-                u.muted,
-            )
-        )
-        u.gap(p, 24)
-        val hero = u.panel(p, u.primary, 24)
-        hero.addView(
-            u.text(
-                if (admin) "${s.users.count{it.active}}" else "${s.events.sumOf{it.participants}}",
-                40,
-                700,
-                u.color(R.color.surface),
-            )
-        )
-        hero.addView(
-            u.text(
-                if (admin) "pengguna aktif dalam komunitas" else "relawan siap berkontribusi",
-                16,
-                600,
-                u.color(R.color.sage),
-            )
-        )
-        u.button(hero, if (admin) "Kelola pengguna" else "Buat kegiatan baru", true) {
-            if (admin) a.selectTab("users")
-            else {
-                s.selectedEvent = 0
-                a.navigate("form")
+        val area = u.column()
+        p.addView(area)
+        a.load(area, { a.api.dashboard() }) { response ->
+            response.data?.let { d ->
+                val panel = u.panel(area)
+                panel.addView(
+                    u.text(
+                        "${d.activities} kegiatan · ${d.activeActivities} aktif",
+                        22,
+                        700,
+                        u.primary,
+                    )
+                )
+                u.gap(panel)
+                panel.addView(
+                    u.text(
+                        "${d.registrations} peserta aktif\n${d.attendances} kehadiran" +
+                            (if (s.role == Role.ADMIN) "\n${d.users} pengguna" else ""),
+                        16,
+                    )
+                )
             }
         }
-        val stats = u.row()
-        for ((number, label) in
-            listOf(
-                s.events.count { !it.completed }.toString() to "Kegiatan aktif",
-                s.attended.size.toString() to "Hadir di contoh",
-            )) {
-            val c = u.column(16)
-            c.addView(u.text(number.padStart(2, '0'), 24, 700, u.primary))
-            c.addView(u.text(label, 12, 600, u.muted))
-            stats.addView(c, LinearLayout.LayoutParams(0, -2, 1f))
+        u.button(p, "Buat kegiatan baru") {
+            s.selectedEvent = 0
+            a.navigate("form")
         }
-        stats.background = u.background(u.color(R.color.sage), 20)
-        p.addView(stats)
-        u.gap(p, 12)
-        u.section(p, if (admin) "Semua kegiatan" else "Kegiatan yang dikelola", "Lihat semua") {
-            a.selectTab("explore")
-        }
-        if (s.events.isEmpty())
-            u.empty(
-                p,
-                "Belum ada kegiatan",
-                "Buat kegiatan pertama untuk mengajak relawan berkontribusi.",
-            )
-        s.events.take(3).forEach { u.eventCard(p, it, it.id in s.joined) { a.openEvent(it.id) } }
-        p.addView(u.text("Pratinjau UI · data contoh lokal", 12, 600, u.muted))
+        u.button(p, "Kelola kegiatan", true) { a.selectTab("explore") }
+        if (s.role == Role.ADMIN) u.button(p, "Kelola pengguna", true) { a.selectTab("users") }
+        u.button(p, "Riwayat aktivitas", true) { a.navigate("history") }
+        u.button(p, "Muat ulang", true) { a.refresh() }
     }
 
     fun users() {
-        val p = a.page("Pengguna", "Kelola orang-orang di balik langkah baik ini.")
+        if (s.role != Role.ADMIN) {
+            a.selectTab("home")
+            return
+        }
+        val p =
+            a.page(
+                "Pengguna",
+                "Kelola akun dan hak akses. Perubahan role atau status dapat mengakhiri sesi pengguna.",
+            )
         u.button(p, "Tambah pengguna") {
-            a.intent.putExtra("preview_user_id", 0)
+            s.selectedUser = null
             a.navigate("userform")
         }
-        u.gap(p)
-        val (_, search) = u.field(p, "Cari nama atau email", s.query)
-        var role = "Semua"
-        val results = u.column()
-        fun populate() {
-            results.removeAllViews()
-            val users =
-                s.users.filter {
-                    (role == "Semua" || it.role.label == role) &&
-                        (s.query.isBlank() ||
-                            it.name.contains(s.query, true) ||
-                            it.email.contains(s.query, true))
-                }
-            if (users.isEmpty())
-                u.empty(
-                    results,
-                    "Pengguna tidak ditemukan",
-                    "Coba nama, email, atau peran lainnya.",
+        val search = u.field(p, "Cari nama atau email", s.query)
+        val role =
+            FormTools(a)
+                .choice(
+                    p,
+                    "Filter role",
+                    listOf("Semua" to "Semua role") + Role.entries.map { it.wire to it.label },
+                    s.category,
                 )
-            users.forEach { user ->
-                val c = u.panel(results)
-                u.meta(c, R.drawable.ic_person, user.name, user.email)
-                u.badge(c, user.role.label + if (user.active) " · Aktif" else " · Nonaktif")
-                u.button(c, "Edit pengguna", true) {
-                    a.intent.putExtra("preview_user_id", user.id)
-                    a.navigate("userform")
-                }
-                u.button(c, if (user.active) "Nonaktifkan akun" else "Aktifkan akun", true) {
-                    a.confirm(
-                        if (user.active) "Nonaktifkan akun?" else "Aktifkan akun?",
-                        "Perubahan ini hanya diterapkan pada data contoh ${user.name}.",
-                        "Konfirmasi",
-                    ) {
-                        user.active = !user.active
-                        populate()
-                        a.notice("Status akun contoh diperbarui.")
+        u.button(p, "Cari pengguna", true) {
+            s.query = search.second.text.toString().trim()
+            s.category = role.value
+            a.render()
+        }
+        val area = u.column()
+        p.addView(area)
+        fun load(page: Int) {
+            val query = mutableMapOf("search" to s.query, "page" to "$page")
+            if (s.category != "Semua") query["role"] = s.category
+            a.load(area, { a.api.users(query) }) { result ->
+                if (result.data.isEmpty())
+                    u.empty(area, "Pengguna belum ditemukan", "Ubah kata kunci atau filter role.")
+                result.data.forEach { user ->
+                    val card = u.panel(area)
+                    card.addView(u.text(user.name, 19, 700))
+                    card.addView(u.text(user.email, 14, 400, u.muted))
+                    u.gap(card, 8)
+                    u.badge(
+                        card,
+                        "${Role.fromWire(user.role)?.label ?: user.role} · ${if (user.active) "Aktif" else "Nonaktif"}",
+                    )
+                    u.button(card, "Edit pengguna", true) {
+                        s.selectedUser = user
+                        a.navigate("userform")
                     }
+                    if (user.id != s.user?.id)
+                        u.button(
+                            card,
+                            if (user.active) "Nonaktifkan akun" else "Aktifkan akun",
+                            true,
+                        ) {
+                            a.confirm("Ubah status akun?", user.email) {
+                                a.write(
+                                    a.api.updateUser(user.id, mapOf("is_active" to !user.active))
+                                ) {
+                                    a.render()
+                                }
+                            }
+                        }
                 }
+                a.pagination(area, result) { load(it) }
             }
         }
-        u.chips(p, listOf("Semua", "Relawan", "Koordinator", "Admin"), role) {
-            role = it
-            populate()
-        }
-        p.addView(results)
-        search.addTextChangedListener(
-            object : TextWatcher {
-                override fun beforeTextChanged(
-                    t: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int,
-                ) {}
-
-                override fun onTextChanged(t: CharSequence?, start: Int, before: Int, count: Int) {
-                    s.query = t.toString()
-                    populate()
-                }
-
-                override fun afterTextChanged(e: Editable?) {}
-            }
-        )
-        populate()
+        load(1)
     }
 
     fun userForm() {
-        val id = a.intent.getIntExtra("preview_user_id", 0)
-        val original = s.users.firstOrNull { it.id == id }
+        if (s.role != Role.ADMIN) {
+            a.selectTab("home")
+            return
+        }
+        val user = s.selectedUser
+        val self = user?.id == s.user?.id
         val p =
             a.page(
-                if (original == null) "Tambah pengguna" else "Edit pengguna",
-                "Atur identitas dan peran pengguna contoh.",
+                if (user == null) "Tambah pengguna" else "Edit pengguna",
+                "Password hanya diatur saat membuat akun.",
                 true,
             )
-        val (nameBox, name) = u.field(p, "Nama lengkap", original?.name.orEmpty())
-        val (emailBox, email) =
+        val name = u.field(p, "Nama lengkap", user?.name.orEmpty())
+        val email =
             u.field(
                 p,
                 "Email",
-                original?.email.orEmpty(),
+                user?.email.orEmpty(),
                 InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
             )
-        var role = original?.role ?: Role.RELAWAN
-        p.addView(u.text("Peran pengguna", 14, 600))
-        u.chips(p, Role.entries.map { it.label }, role.label) { label ->
-            role = Role.entries.first { it.label == label }
-        }
-        p.addView(
-            u.text(
-                "Form ini mengubah data contoh. Pembuatan akun dan kata sandi sesungguhnya akan ditangani API Laravel.",
-                14,
-                400,
-                u.muted,
+        val phone = u.field(p, "Nomor telepon", user?.phone.orEmpty(), InputType.TYPE_CLASS_PHONE)
+        val role =
+            if (!self)
+                FormTools(a)
+                    .choice(
+                        p,
+                        "Role pengguna",
+                        Role.entries.map { it.wire to it.label },
+                        user?.role ?: "relawan",
+                    )
+            else null
+        if (self)
+            p.addView(
+                u.text(
+                    "Role dan status akunmu sendiri tidak dapat diubah dari sini.",
+                    14,
+                    400,
+                    u.muted,
+                )
             )
-        )
-        u.gap(p, 20)
+        val password =
+            if (user == null)
+                u.field(
+                    p,
+                    "Kata sandi",
+                    type = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                )
+            else null
+        val confirm =
+            if (user == null)
+                u.field(
+                    p,
+                    "Ulangi kata sandi",
+                    type = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                )
+            else null
+        val fields =
+            mutableMapOf("name" to name.first, "email" to email.first, "phone" to phone.first)
+        role?.let { fields["role"] = it.box }
+        password?.let { fields["password"] = it.first }
+        confirm?.let { fields["password_confirmation"] = it.first }
         u.button(p, "Simpan pengguna") {
-            val n = name.text.toString().trim()
-            val e = email.text.toString().trim().lowercase()
-            nameBox.error = if (n.isBlank()) "Nama wajib diisi" else null
-            emailBox.error =
-                when {
-                    !Patterns.EMAIL_ADDRESS.matcher(e).matches() -> "Email belum valid"
-                    s.users.any { it.id != id && it.email == e } -> "Email contoh sudah digunakan"
-                    else -> null
-                }
-            if (nameBox.error == null && emailBox.error == null) {
-                if (original == null)
-                    s.users.add(PreviewUser((s.users.maxOfOrNull { it.id } ?: 0) + 1, n, e, role))
-                else {
-                    original.name = n
-                    original.email = e
-                    original.role = role
-                }
+            fields.values.forEach { it.error = null }
+            name.first.error =
+                if (name.second.text.toString().isBlank()) "Nama wajib diisi" else null
+            val mail = email.second.text.toString().trim().lowercase(java.util.Locale.ROOT)
+            email.first.error =
+                if (!Patterns.EMAIL_ADDRESS.matcher(mail).matches()) "Email tidak valid" else null
+            if (password != null) {
+                val value = password.second.text.toString()
+                password.first.error =
+                    if (
+                        value.length < 8 ||
+                            !value.any { it.isLetter() } ||
+                            !value.any { it.isDigit() }
+                    )
+                        "Minimal 8 karakter dengan huruf dan angka"
+                    else null
+                confirm!!.first.error =
+                    if (confirm.second.text.toString() != value) "Kata sandi belum sama" else null
+            }
+            if (fields.values.any { it.error != null }) return@button
+            val body =
+                mutableMapOf<String, Any?>(
+                    "name" to name.second.text.toString().trim(),
+                    "email" to mail,
+                    "phone" to phone.second.text.toString().trim().ifEmpty { null },
+                )
+            if (user == null) {
+                body["role"] = role!!.value
+                body["password"] = password!!.second.text.toString()
+                body["password_confirmation"] = confirm!!.second.text.toString()
+            } else if (role != null && role.value != user.role) body["role"] = role.value
+            a.write(
+                if (user == null) a.api.createUser(body) else a.api.updateUser(user.id, body),
+                fields,
+            ) { response ->
+                if (self) response.data?.let { s.user = it }
                 a.selectTab("users")
-                a.notice("Pengguna contoh disimpan.")
+                a.notice("Pengguna disimpan.")
             }
         }
-        u.button(p, "Batal", true) { a.selectTab("users") }
     }
 }

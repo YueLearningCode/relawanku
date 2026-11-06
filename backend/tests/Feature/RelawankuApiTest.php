@@ -237,7 +237,7 @@ class RelawankuApiTest extends TestCase
     public function test_demo_seeder_is_idempotent_and_preserves_passwords(): void
     {
         $this->seed(DemoSeeder::class);
-        $user = User::where('email', 'relawan@relawanku.test')->firstOrFail();
+        $user = User::where('email', 'relawan@gmail.com')->firstOrFail();
         $password = $user->password;
         $this->seed(DemoSeeder::class);
         $this->assertDatabaseCount('users', 3);
@@ -315,5 +315,62 @@ class RelawankuApiTest extends TestCase
             $this->postJson('/api/auth/login', ['email' => 'salah@example.test', 'password' => 'Salah123!', 'device_name' => 'test'])->assertUnprocessable();
         }
         $this->postJson('/api/auth/login', ['email' => 'salah@example.test', 'password' => 'Salah123!', 'device_name' => 'test'])->assertTooManyRequests();
+    }
+
+    public function test_activity_detail_only_contains_the_callers_registration_and_fresh_status(): void
+    {
+        $activity = $this->activity();
+        $volunteer = $this->user();
+        $other = $this->user();
+        $mine = $this->register($volunteer, $activity);
+        $theirs = $this->register($other, $activity);
+        $url = '/api/activities/'.$activity->id;
+
+        $this->actingAs($volunteer, 'sanctum')->getJson($url)->assertOk()
+            ->assertJsonPath('data.active_registrations_count', 2)
+            ->assertJsonPath('data.my_registration.id', $mine->id)
+            ->assertJsonPath('data.my_registration.user_id', $volunteer->id)
+            ->assertJsonPath('data.my_registration.status', 'registered')
+            ->assertJsonPath('data.my_registration.attendance', null)
+            ->assertJsonMissingPath('data.registrations')
+            ->assertJsonMissingPath('data.my_registration.user');
+        $this->deleteJson($url.'/registration')->assertOk();
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('data.active_registrations_count', 1)
+            ->assertJsonPath('data.my_registration.status', 'cancelled');
+        $this->actingAs($other, 'sanctum')->getJson($url)->assertOk()
+            ->assertJsonPath('data.my_registration.id', $theirs->id);
+    }
+
+    public function test_activity_detail_has_null_membership_for_unregistered_users_and_managers(): void
+    {
+        $activity = $this->activity();
+        $this->register($this->user(), $activity);
+        $url = '/api/activities/'.$activity->id;
+        $this->actingAs($this->user(), 'sanctum')->getJson($url)->assertOk()
+            ->assertJsonPath('data.my_registration', null);
+        $this->actingAs(User::find($activity->coordinator_id), 'sanctum')->getJson($url)->assertOk()
+            ->assertJsonPath('data.my_registration', null);
+    }
+
+    public function test_activity_detail_contains_attendance_without_private_session_fields(): void
+    {
+        $activity = $this->activity(attributes: [
+            'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(),
+            'registration_deadline' => now()->subHour(),
+        ]);
+        $volunteer = $this->user();
+        $this->register($volunteer, $activity);
+        $url = '/api/activities/'.$activity->id;
+        $code = $this->actingAs(User::find($activity->coordinator_id), 'sanctum')
+            ->postJson($url.'/attendance-sessions', ['duration_minutes' => 10])
+            ->assertCreated()->json('data.code');
+        $attendance = $this->actingAs($volunteer, 'sanctum')
+            ->postJson($url.'/attendances', ['code' => $code])->assertCreated()->json('data');
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('data.my_registration.attendance.id', $attendance['id'])
+            ->assertJsonPath('data.my_registration.attendance.checked_in_at', $attendance['checked_in_at'])
+            ->assertJsonMissingPath('data.my_registration.attendance.attendance_session_id')
+            ->assertJsonMissingPath('data.my_registration.attendance.code_hash');
     }
 }
