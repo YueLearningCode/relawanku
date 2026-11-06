@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Relawanku</string>
     <string name="activity_image">Foto ilustrasi kegiatan</string>
+    <string name="password_show">Tampilkan kata sandi</string>
+    <string name="password_hide">Sembunyikan kata sandi</string>
 </resources>

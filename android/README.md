@@ -44,6 +44,7 @@ URL default debug adalah `http://10.0.2.2:8000/api/`. Bisa diganti melalui penga
 Pengaturan server tersimpan di perangkat dan mengungguli default build. Ganti kembali lewat halaman masuk bila perlu. Prefiks API tetap `/api/`, tanpa `/v1`.
 
 ## Perilaku aplikasi
+Password pada login, pendaftaran Relawan, dan form Admin membuat pengguna selalu disamarkan setelah seluruh konfigurasi input selesai. Ikon mata terbuka berarti **Tampilkan kata sandi**; setelah ditekan, ikon mata dicoret berarti **Sembunyikan kata sandi**. Toggle mempertahankan isi, selection/kursor, tipe input password, dan pesan validasi. Ikon error terpisah tidak menutupi tombol mata. `PasswordVisibilityTest` mencakup kondisi awal, toggle berulang, validasi, serta independensi password dan konfirmasi.
 ### Navigasi, keyboard, dan tampilan
 
 Shell menerapkan inset sistem satu kali. Bottom navigation memiliki area isi 64 dp ditambah area aman navigasi sistem, dengan divider tipis dan label yang konsisten. Padding bawah tidak lagi diterapkan oleh root dan Material sekaligus.

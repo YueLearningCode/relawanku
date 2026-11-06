@@ -177,10 +177,10 @@ class UiKit(val context: Context) {
     ): Pair<TextInputLayout, TextInputEditText> {
         val box =
             TextInputLayout(
-                context,
-                null,
-                com.google.android.material.R.attr.textInputOutlinedStyle,
-            )
+                    context,
+                    null,
+                    com.google.android.material.R.attr.textInputOutlinedStyle,
+                )
                 .apply {
                     hint = label
                     boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
@@ -213,11 +213,56 @@ class UiKit(val context: Context) {
                 }
             }
         box.addView(edit)
-        if (
-            type and InputType.TYPE_TEXT_VARIATION_PASSWORD != 0 &&
-            type and InputType.TYPE_CLASS_NUMBER == 0
-        )
-            box.endIconMode = TextInputLayout.END_ICON_PASSWORD_TOGGLE
+        val inputClass = type and InputType.TYPE_MASK_CLASS
+        val variation = type and InputType.TYPE_MASK_VARIATION
+        val password =
+            when (inputClass) {
+                InputType.TYPE_CLASS_TEXT ->
+                    variation in
+                        listOf(
+                            InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+                            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+                        )
+                InputType.TYPE_CLASS_NUMBER -> variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                else -> false
+            }
+        if (password) {
+            // setSingleLine() replaces the transformation; apply masking after all field setup.
+            edit.transformationMethod =
+                android.text.method.PasswordTransformationMethod.getInstance()
+            box.endIconMode = TextInputLayout.END_ICON_CUSTOM
+            box.setEndIconCheckable(false)
+            box.errorIconDrawable = null
+            box.setEndIconTintList(ColorStateList.valueOf(muted))
+            fun updatePasswordIcon() {
+                val hidden =
+                    edit.transformationMethod is android.text.method.PasswordTransformationMethod
+                box.setEndIconDrawable(
+                    if (hidden) R.drawable.ic_password_show else R.drawable.ic_password_hide
+                )
+                box.setEndIconContentDescription(
+                    if (hidden) R.string.password_show else R.string.password_hide
+                )
+            }
+            box.setEndIconOnClickListener {
+                val start = edit.selectionStart
+                val end = edit.selectionEnd
+                val hidden =
+                    edit.transformationMethod is android.text.method.PasswordTransformationMethod
+                edit.transformationMethod =
+                    if (hidden) null
+                    else android.text.method.PasswordTransformationMethod.getInstance()
+                if (start >= 0 && end >= 0) {
+                    edit.setSelection(
+                        start.coerceAtMost(edit.length()),
+                        end.coerceAtMost(edit.length()),
+                    )
+                }
+                updatePasswordIcon()
+            }
+            updatePasswordIcon()
+        }
         parent.addView(box)
         return box to edit
     }
@@ -311,17 +356,17 @@ class UiKit(val context: Context) {
 
     fun avatar(name: String, size: Int = 48): TextView =
         text(
-            name
-                .trim()
-                .split(Regex("\\s+"))
-                .filter { it.isNotEmpty() }
-                .take(2)
-                .joinToString("") { it.take(1) }
-                .uppercase(java.util.Locale.ROOT),
-            17,
-            700,
-            primary,
-        )
+                name
+                    .trim()
+                    .split(Regex("\\s+"))
+                    .filter { it.isNotEmpty() }
+                    .take(2)
+                    .joinToString("") { it.take(1) }
+                    .uppercase(java.util.Locale.ROOT),
+                17,
+                700,
+                primary,
+            )
             .apply {
                 gravity = Gravity.CENTER
                 background = background(color(R.color.sage), size / 2)

@@ -1,4 +1,19 @@
 # Setup API Relawanku
+## Perbaikan password pada 6 November 2026
+
+Baseline `main` adalah `f1af6d7`, yang sudah memuat merge integrasi/UI dari `andro-backend`. Perubahan pengguna untuk menyembunyikan URL pada halaman masuk dipertahankan.
+
+- [x] Bug berhasil direproduksi: ketiga tes baru (login, daftar, tambah pengguna Admin) gagal karena password terlihat pada render pertama.
+- [x] Akar masalah ditemukan pada `TextView.setSingleLine()`, yang mengganti PasswordTransformationMethod menjadi SingleLineTransformationMethod setelah inputType password ditentukan. Masking sekarang dipasang setelah seluruh konfigurasi field selesai.
+- [x] Ikon custom berdasarkan tindakan: mata terbuka untuk menampilkan password yang tersembunyi, mata dicoret untuk menyembunyikan password yang terlihat. Label aksesibilitas mengikuti tindakan berikutnya.
+- [x] Isi password, selection/kursor, tipe input, dan pesan validasi tidak berubah saat toggle. Password dan konfirmasi tetap independen. Ikon error tidak menutup tombol mata.
+- [x] Build debug, APK tes, dan 19 unit test lulus; lint debug 0 error, 49 warning.
+- [x] Setelah perbaikan, seluruh instrumentation lulus: `OK (12 tests)`, 68,346 detik pada emulator API 37. Termasuk tiga regresi password, cache, keyboard/navigasi, Welcome XML, dan alur Laravel dengan database/storage uji terisolasi.
+- [x] Emulator sempat mengalami kegagalan layanan SystemServer sebelum instrumentation dimulai; cold boot memulihkan layanan, lalu seluruh tes berhasil. Ini terpisah dari bug aplikasi yang sudah direproduksi dan diperbaiki.
+- [x] `git diff --check` lulus. Backend serta alur pendaftaran/hak akses Koordinator tidak diubah.
+
+Saat ini akun Koordinator tetap dibuat Admin melalui Pengguna > Tambah pengguna > Role Koordinator. Pengajuan mandiri instansi merupakan usulan alur, belum diimplementasikan dalam perbaikan password ini. Verifikasi perangkat dilakukan pada emulator, belum diulang pada HP fisik. Server dan emulator uji dihentikan setelah verifikasi. Perubahan baru tetap lokal, belum commit/push.
+
 ## Perbaikan UI dan keyboard pada 6 November 2026
 
 Dilanjutkan pada `andro-backend` (baseline commit `49ce76a`), setelah checkout awal ditemukan berada di `main` yang masih berisi UI pratinjau. Working tree awal bersih; source integrasi dan cache yang sudah tersimpan dipertahankan.
