@@ -1,11 +1,11 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:orientation="vertical">
 
     <FrameLayout
         android:id="@+id/screen_host"
@@ -13,11 +13,23 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <View
+        android:id="@+id/navigation_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/outline" />
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="64dp"
         android:background="@color/surface"
-        android:minHeight="76dp"
+        android:minHeight="64dp"
+        app:itemHorizontalTranslationEnabled="false"
+        app:itemIconSize="22dp"
+        app:itemPaddingBottom="6dp"
+        app:itemPaddingTop="8dp"
+        app:itemTextAppearanceActive="@style/TextAppearance.Relawanku.Navigation.Active"
+        app:itemTextAppearanceInactive="@style/TextAppearance.Relawanku.Navigation"
         app:labelVisibilityMode="labeled" />
 </LinearLayout>

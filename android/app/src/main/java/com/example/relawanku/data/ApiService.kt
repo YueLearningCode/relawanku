@@ -2,32 +2,52 @@ package com.example.relawanku.data
 
 import okhttp3.MultipartBody
 import retrofit2.Call
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.HTTP
+import retrofit2.http.Multipart
+import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.Part
+import retrofit2.http.Path
+import retrofit2.http.Query
+import retrofit2.http.QueryMap
 
 @JvmSuppressWildcards
 interface ApiService {
-    @GET("health") fun health(): Call<Map<String, String>>
+    @GET("health")
+    fun health(): Call<Map<String, String>>
 
-    @POST("auth/login") fun login(@Body data: Map<String, Any?>): Call<Envelope<LoginData>>
+    @POST("auth/login")
+    fun login(@Body data: Map<String, Any?>): Call<Envelope<LoginData>>
 
-    @POST("auth/register") fun register(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
+    @POST("auth/register")
+    fun register(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
 
-    @GET("auth/me") fun me(): Call<Envelope<ApiUser>>
+    @GET("auth/me")
+    fun me(): Call<Envelope<ApiUser>>
 
-    @PATCH("auth/me") fun updateProfile(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
+    @PATCH("auth/me")
+    fun updateProfile(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
 
-    @POST("auth/logout") fun logout(): Call<Envelope<Unit>>
+    @POST("auth/logout")
+    fun logout(): Call<Envelope<Unit>>
 
-    @GET("dashboard") fun dashboard(): Call<Envelope<DashboardDto>>
+    @GET("dashboard")
+    fun dashboard(): Call<Envelope<DashboardDto>>
 
-    @GET("history") fun history(@Query("page") page: Int): Call<ApiPage<HistoryDto>>
+    @GET("history")
+    fun history(@Query("page") page: Int): Call<ApiPage<HistoryDto>>
 
-    @GET("my/registrations") fun mine(@Query("page") page: Int): Call<ApiPage<RegistrationDto>>
+    @GET("my/registrations")
+    fun mine(@Query("page") page: Int): Call<ApiPage<RegistrationDto>>
 
     @GET("activities")
     fun activities(@QueryMap filters: Map<String, String>): Call<ApiPage<ActivityDto>>
 
-    @GET("activities/{id}") fun activity(@Path("id") id: Long): Call<Envelope<ActivityDto>>
+    @GET("activities/{id}")
+    fun activity(@Path("id") id: Long): Call<Envelope<ActivityDto>>
 
     @POST("activities")
     fun createActivity(@Body data: Map<String, Any?>): Call<Envelope<ActivityDto>>
@@ -38,7 +58,8 @@ interface ApiService {
         @Body data: Map<String, Any?>,
     ): Call<Envelope<ActivityDto>>
 
-    @DELETE("activities/{id}") fun deleteActivity(@Path("id") id: Long): Call<Envelope<Unit>>
+    @DELETE("activities/{id}")
+    fun deleteActivity(@Path("id") id: Long): Call<Envelope<Unit>>
 
     @HTTP(method = "DELETE", path = "activities/bulk", hasBody = true)
     fun deleteActivities(@Body data: Map<String, Any?>): Call<Envelope<Unit>>
@@ -50,7 +71,8 @@ interface ApiService {
     @POST("activities/{id}/registrations")
     fun join(@Path("id") id: Long): Call<Envelope<RegistrationDto>>
 
-    @DELETE("activities/{id}/registration") fun leave(@Path("id") id: Long): Call<Envelope<Unit>>
+    @DELETE("activities/{id}/registration")
+    fun leave(@Path("id") id: Long): Call<Envelope<Unit>>
 
     @GET("activities/{id}/registrations")
     fun participants(@Path("id") id: Long, @Query("page") page: Int): Call<ApiPage<RegistrationDto>>
@@ -123,9 +145,11 @@ interface ApiService {
     @DELETE("activities/{id}/documentations/{photo}")
     fun deletePhoto(@Path("id") id: Long, @Path("photo") photo: Long): Call<Envelope<Unit>>
 
-    @GET("users") fun users(@QueryMap filters: Map<String, String>): Call<ApiPage<ApiUser>>
+    @GET("users")
+    fun users(@QueryMap filters: Map<String, String>): Call<ApiPage<ApiUser>>
 
-    @POST("users") fun createUser(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
+    @POST("users")
+    fun createUser(@Body data: Map<String, Any?>): Call<Envelope<ApiUser>>
 
     @PATCH("users/{id}")
     fun updateUser(@Path("id") id: Long, @Body data: Map<String, Any?>): Call<Envelope<ApiUser>>

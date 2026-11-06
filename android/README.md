@@ -44,6 +44,15 @@ URL default debug adalah `http://10.0.2.2:8000/api/`. Bisa diganti melalui penga
 Pengaturan server tersimpan di perangkat dan mengungguli default build. Ganti kembali lewat halaman masuk bila perlu. Prefiks API tetap `/api/`, tanpa `/v1`.
 
 ## Perilaku aplikasi
+### Navigasi, keyboard, dan tampilan
+
+Shell menerapkan inset sistem satu kali. Bottom navigation memiliki area isi 64 dp ditambah area aman navigasi sistem, dengan divider tipis dan label yang konsisten. Padding bawah tidak lagi diterapkan oleh root dan Material sekaligus.
+
+Saat keyboard terbuka, bottom navigation disembunyikan sementara. Inset keyboard hanya diterapkan pada area konten; toolbar halaman berada di luar area scroll. Pada Profil, hanya formulir yang bergulir agar field yang dipilih terlihat, sementara judul halaman tetap di atas. Tombol Back menutup keyboard terlebih dahulu dan tetap berada pada halaman yang sama. Navigasi dan aksi simpan menutup keyboard agar tidak terbawa ke halaman berikutnya.
+
+Dashboard ketiga role memakai hierarki judul, ringkasan angka, kartu statistik, dan menu tindakan yang lebih ringkas. Profil memisahkan identitas, informasi pribadi, dan pengaturan akun. Tombol sekunder memakai outline, sudut kartu lebih sederhana, area sentuh profil minimal 48 dp, dan kartu kegiatan menampilkan kapasitas dari data API. Nunito dan palet teal-sage tetap dipakai; Welcome tetap XML.
+
+Tes `WindowInsetsFlowTest` memeriksa geometri bottom navigation, fokus field di atas keyboard, toolbar profil yang tetap, isi form yang tidak hilang saat keyboard dibuka-tutup, dan pemulihan navigasi untuk ketiga role. Pada emulator dengan hardware keyboard, aktifkan software keyboard sebelum tes (`adb -s SERIAL shell settings put secure show_ime_with_hard_keyboard 1`), kemudian pulihkan pengaturan setelahnya. Hasil pemeriksaan gesture/tiga tombol dan font besar dicatat di `../todo.md`.
 
 Data baca kegiatan/dashboard/Kegiatanku/tugas/dokumentasi/riwayat memakai `ReadCache` dalam ViewModel selama 30 detik, maksimal 64 respons. Kembali ke halaman yang sama selama cache masih berlaku tidak mengirim request ulang. Cache dipisah per server/akun/role/filter/halaman, dan dibersihkan ketika sesi berakhir. `auth/me`, pengguna Admin, dan daftar kehadiran tetap diambil dari server. Tombol **Muat ulang** memaksa pengambilan data halaman aktif. Aksi tulis tidak di-cache dan otomatis membatalkan cache terkait.
 

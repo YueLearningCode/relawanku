@@ -22,12 +22,21 @@
     <style name="Theme.Relawanku" parent="Base.Theme.Relawanku" />
 
     <style name="Widget.Relawanku.Button" parent="Widget.Material3.Button">
-        <item name="cornerRadius">16dp</item>
+        <item name="cornerRadius">12dp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:fontFamily">@font/nunito_bold</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:minHeight">56dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">48dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <style name="TextAppearance.Relawanku.Navigation" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/nunito_semibold</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+
+    <style name="TextAppearance.Relawanku.Navigation.Active" parent="TextAppearance.Relawanku.Navigation">
+        <item name="android:fontFamily">@font/nunito_bold</item>
     </style>
 </resources>

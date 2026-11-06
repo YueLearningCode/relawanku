@@ -73,8 +73,10 @@ class ReadCache(
                 invalidate {
                     it == "dashboard" || it == "history" || it.startsWith("$eventRoot/tasks")
                 }
+
             "documentations" ->
                 invalidate { it == "history" || it.startsWith("$eventRoot/documentations") }
+
             else ->
                 invalidate {
                     it == "dashboard" ||

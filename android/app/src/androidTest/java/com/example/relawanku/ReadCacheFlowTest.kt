@@ -3,13 +3,15 @@ package com.example.relawanku
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.relawanku.data.*
-import java.util.concurrent.atomic.AtomicInteger
+import com.example.relawanku.data.ApiClient
+import com.example.relawanku.data.ApiUser
+import com.example.relawanku.data.SessionStore
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class ReadCacheFlowTest {

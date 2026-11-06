@@ -1,4 +1,28 @@
 # Setup API Relawanku
+## Perbaikan UI dan keyboard pada 6 November 2026
+
+Dilanjutkan pada `andro-backend` (baseline commit `49ce76a`), setelah checkout awal ditemukan berada di `main` yang masih berisi UI pratinjau. Working tree awal bersih; source integrasi dan cache yang sudah tersimpan dipertahankan.
+
+- [x] Akar masalah: root menambahkan padding bawah system bars/IME, sementara Material bottom navigation juga menangani inset bawah. Shell sekarang menjadi satu pemilik inset sistem; area isi navigasi 64 dp, safe area diterapkan sekali, dan divider tipis.
+- [x] Keyboard hanya memengaruhi area konten. Bottom navigation disembunyikan saat mengetik, lalu kembali setelah keyboard ditutup. Toolbar profil tetap di posisi yang sama; field terpilih bergulir ke area yang terlihat. Back pertama menutup keyboard tanpa meninggalkan halaman.
+- [x] Dashboard Relawan/Koordinator/Admin ditata ulang: header peran, avatar profil dengan target sentuh 48 dp, ringkasan angka, kartu metrik, dan menu tindakan. Form profil dikelompokkan menjadi identitas, informasi pribadi, dan pengaturan akun.
+- [x] Tombol 48 dp dengan sudut 12 dp, tombol sekunder outline, kartu kegiatan dengan sudut 14 dp dan indikator kuota, serta label statistik yang tidak terbelah dan kartu sejajar pada font besar.
+- [x] Nunito, teal-sage, dan Welcome berbasis XML dipertahankan. Backend, model/cache data, dan kontrak API tidak diubah dalam tahap ini.
+
+| Pemeriksaan UI terbaru | Hasil |
+| --- | --- |
+| Build debug dan APK instrumentation | Lulus. |
+| Unit test Android | 19 tes lulus. |
+| Seluruh instrumentation pada emulator API 37, mode gesture, 1080 x 2400 / 420 dpi / font 100% | `OK (9 tests)`, 45,698 detik. Termasuk alur Laravel dengan database/storage terisolasi, cache, Welcome XML, dan tes keyboard. |
+| Regresi insets/keyboard pada 1080 x 2160 / 480 dpi (lebar 360 dp), font 130%, navigasi tiga tombol | `OK (2 tests)`, 17,896 detik; satu tes mencakup ketiga role, satu tes login. |
+| Geometri navigasi | Root tidak menambah padding bawah, tinggi nav = 64 dp + safe area, nav mencapai tepi bawah app; tidak ada inset ganda. |
+| Profil saat keyboard tampil | Toolbar tetap, field terlihat di atas keyboard, draft tetap, nav tersembunyi; Back menutup keyboard dan nav kembali tanpa pindah tab. |
+| Screenshot | Dashboard/profil/keyboard ketiga role dan login diperiksa; pemeriksaan font besar menemukan label metrik yang terbelah, kemudian diperbaiki dan diuji ulang. |
+| Lint debug | 0 error, 49 warning. |
+| Git | `git diff --check` lulus; perubahan pada backend, data/cache Android, serta resource Welcome kosong. |
+
+Perubahan baru masih lokal, belum commit/push. Belum diuji ulang pada HP fisik/OEM Infinix atau API 24. Pengujian tidak menggunakan database utama. Server dan emulator sementara dihentikan; ukuran layar, density, font scale, mode navigasi, serta pengaturan software keyboard emulator dipulihkan. Draft formulir saat rotasi tetap merupakan batasan yang terpisah dari pembukaan/penutupan keyboard.
+
 ## Efisiensi request Android/API pada 6 November 2026
 
 - [x] Detail kegiatan mengirim `my_registration` milik pengguna yang login, termasuk kehadiran sendiri; data akun/peserta lain dan identitas sesi absensi tidak ikut dikirim. Tidak menambah endpoint atau migration.

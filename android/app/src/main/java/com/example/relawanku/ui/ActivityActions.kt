@@ -5,7 +5,11 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.LinearLayout
 import com.example.relawanku.MainActivity
-import com.example.relawanku.data.*
+import com.example.relawanku.data.ActivityDto
+import com.example.relawanku.data.Dates
+import com.example.relawanku.data.RegistrationDto
+import com.example.relawanku.data.TaskDto
+import com.example.relawanku.data.statusLabel
 
 class ActivityActions(private val a: MainActivity, private val event: ActivityDto) {
     private val u = a.ui
@@ -28,8 +32,8 @@ class ActivityActions(private val a: MainActivity, private val event: ActivityDt
                     )
                     if (
                         r.status == "registered" &&
-                            r.attendance == null &&
-                            (Dates.parse(event.startsAt)?.time ?: 0) > System.currentTimeMillis()
+                        r.attendance == null &&
+                        (Dates.parse(event.startsAt)?.time ?: 0) > System.currentTimeMillis()
                     )
                         u.button(card, "Batalkan peserta", true) {
                             a.confirm(

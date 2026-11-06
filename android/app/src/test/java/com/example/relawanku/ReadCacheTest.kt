@@ -2,7 +2,8 @@ package com.example.relawanku
 
 import com.example.relawanku.data.ReadCache
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ReadCacheTest {
@@ -91,14 +92,14 @@ class ReadCacheTest {
     @Test
     fun credentials_users_health_and_live_attendance_are_never_cached() {
         for (path in
-            listOf(
-                "auth/me",
-                "auth/login",
-                "users?page=1",
-                "health",
-                "activities/1/attendances",
-                "activities/1/attendance-sessions",
-            )) {
+        listOf(
+            "auth/me",
+            "auth/login",
+            "users?page=1",
+            "health",
+            "activities/1/attendances",
+            "activities/1/attendance-sessions",
+        )) {
             put(path)
             assertNull("Must not cache $path", read(path))
         }

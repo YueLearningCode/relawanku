@@ -59,30 +59,30 @@ class FormTools(private val a: MainActivity) {
             val cal = Calendar.getInstance()
             Dates.parse(value)?.let { cal.time = it }
             DatePickerDialog(
-                    a,
-                    { _, year, month, day ->
-                        cal.set(year, month, day)
-                        TimePickerDialog(
-                                a,
-                                { _, hour, minute ->
-                                    cal.set(Calendar.HOUR_OF_DAY, hour)
-                                    cal.set(Calendar.MINUTE, minute)
-                                    cal.set(Calendar.SECOND, 0)
-                                    cal.set(Calendar.MILLISECOND, 0)
-                                    value = Dates.iso(cal.time)
-                                    edit.setText(Dates.full(value))
-                                    box.error = null
-                                },
-                                cal.get(Calendar.HOUR_OF_DAY),
-                                cal.get(Calendar.MINUTE),
-                                true,
-                            )
-                            .show()
-                    },
-                    cal.get(Calendar.YEAR),
-                    cal.get(Calendar.MONTH),
-                    cal.get(Calendar.DAY_OF_MONTH),
-                )
+                a,
+                { _, year, month, day ->
+                    cal.set(year, month, day)
+                    TimePickerDialog(
+                        a,
+                        { _, hour, minute ->
+                            cal.set(Calendar.HOUR_OF_DAY, hour)
+                            cal.set(Calendar.MINUTE, minute)
+                            cal.set(Calendar.SECOND, 0)
+                            cal.set(Calendar.MILLISECOND, 0)
+                            value = Dates.iso(cal.time)
+                            edit.setText(Dates.full(value))
+                            box.error = null
+                        },
+                        cal.get(Calendar.HOUR_OF_DAY),
+                        cal.get(Calendar.MINUTE),
+                        true,
+                    )
+                        .show()
+                },
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH),
+                cal.get(Calendar.DAY_OF_MONTH),
+            )
                 .show()
         }
         return Choice(box) { value }

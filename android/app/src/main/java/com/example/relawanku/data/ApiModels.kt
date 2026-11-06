@@ -18,7 +18,8 @@ object Dates {
                 return SimpleDateFormat(pattern, Locale.US)
                     .apply { isLenient = false }
                     .parse(normalized)
-            } catch (_: java.text.ParseException) {}
+            } catch (_: java.text.ParseException) {
+            }
         }
         return null
     }
