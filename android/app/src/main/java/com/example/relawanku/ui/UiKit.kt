@@ -11,7 +11,10 @@ import android.view.View
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import com.bumptech.glide.Glide
+import com.example.relawanku.MainActivity
 import com.example.relawanku.R
+import com.example.relawanku.data.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -276,29 +279,40 @@ class UiKit(val context: Context) {
 
     fun eventCard(
         parent: LinearLayout,
-        event: VolunteerEvent,
+        event: ActivityDto,
         joined: Boolean,
         onClick: () -> Unit,
     ) {
         val card = LayoutInflater.from(context).inflate(R.layout.item_activity, parent, false)
-        card.findViewById<ImageView>(R.id.card_image).setImageResource(event.image)
+        image(card.findViewById(R.id.card_image), event.coverUrl, event.image)
         card.findViewById<TextView>(R.id.card_category).text = event.category
         card.findViewById<TextView>(R.id.card_date).text =
-            event.date.substringBefore(" 2026") + " · " + event.time.substringBefore(" –")
+            event.date + " · " + Dates.time(event.startsAt)
         card.findViewById<TextView>(R.id.card_title).text = event.title
         card.findViewById<TextView>(R.id.card_location).text = event.location
         card.findViewById<TextView>(R.id.card_quota).text =
             "${event.participants}/${event.quota} relawan"
         card.findViewById<TextView>(R.id.card_status).text =
             when {
-                event.completed -> "Selesai"
-                joined -> "Sudah terdaftar"
-                event.participants >= event.quota -> "Kuota penuh"
-                else -> "Pendaftaran dibuka"
+                event.deletedAt != null -> "Diarsipkan"
+                joined -> "Terdaftar · ${statusLabel(event.status)}"
+                event.registrationOpen() -> "Pendaftaran dibuka"
+                event.status == "open" -> "Pendaftaran tidak tersedia"
+                else -> statusLabel(event.status)
             }
         card.isClickable = true
         card.isFocusable = true
         card.setOnClickListener { onClick() }
         parent.addView(card)
+    }
+
+    fun image(view: ImageView, url: String?, placeholder: Int = R.drawable.activity_coast) {
+        view.scaleType = ImageView.ScaleType.CENTER_CROP
+        Glide.with(context)
+            .load(ServerAddress.media((context as MainActivity).session.baseUrl, url))
+            .placeholder(placeholder)
+            .error(placeholder)
+            .centerCrop()
+            .into(view)
     }
 }

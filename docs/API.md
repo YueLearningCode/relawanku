@@ -220,6 +220,13 @@ Route pembaruan resource kegiatan, tugas, dokumentasi, dan pengguna juga menerim
 
 ## Integrasi Android
 
+`GET /api/activities/{activity}` juga mengembalikan `data.my_registration`: pendaftaran milik pengguna yang sedang login beserta `attendance`, atau `null` jika belum mendaftar/bukan Relawan. Status `cancelled` tetap dikirim untuk riwayat. Field ini hanya ada pada respons detail, tidak memuat peserta lain, data akun, kode, atau identitas sesi absensi. Android tidak perlu memindai `/my/registrations` untuk memeriksa satu kegiatan.
+
+Android menyimpan hasil baca daftar/detail kegiatan, dashboard, tugas, dokumentasi, Kegiatanku, dan riwayat dalam cache memori 30 detik (maksimal 64 respons). Cache berada dalam ViewModel, dipisahkan berdasarkan server, akun, role, URL/filter/halaman, dan hilang saat proses berakhir atau sesi dihapus. Profil autentikasi (`auth/me`), pengelolaan pengguna, dan daftar kehadiran tidak di-cache.
+
+Tombol **Muat ulang** menghapus cache halaman yang sedang dibuka. Aksi tulis selalu menuju server dan menghapus cache yang terdampak, termasuk saat hasil koneksi belum pasti. Respons baca lama yang dimulai sebelum mutasi tidak boleh mengisi ulang cache. Perubahan dari perangkat lain terlihat setelah TTL habis atau refresh manual; validasi kuota, hak akses, dan absensi tetap dilakukan server pada setiap aksi. Ini merupakan cache aplikasi per sesi, bukan cache respons bersama di Laravel.
+
+
 - Emulator Android umumnya mengakses host melalui `http://10.0.2.2:8000/api/` (akhiri base URL Retrofit dengan `/`).
 - Untuk perangkat fisik, gunakan IP LAN komputer dan jalankan server dengan `--host=0.0.0.0`; perangkat dan komputer harus terhubung ke jaringan yang sama.
 - Tambahkan header Bearer melalui interceptor setelah login. Tangani HTTP 401 dengan meminta pengguna masuk kembali.

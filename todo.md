@@ -1,4 +1,58 @@
 # Setup API Relawanku
+## Efisiensi request Android/API pada 6 November 2026
+
+- [x] Detail kegiatan mengirim `my_registration` milik pengguna yang login, termasuk kehadiran sendiri; data akun/peserta lain dan identitas sesi absensi tidak ikut dikirim. Tidak menambah endpoint atau migration.
+- [x] Android tidak lagi mengambil seluruh halaman `/my/registrations` untuk satu detail. Pembukaan detail yang belum di-cache cukup satu request, sebelumnya minimal dua dan bertambah sesuai jumlah halaman pendaftaran.
+- [x] `ReadCache` berada dalam ViewModel: TTL 30 detik, maksimal 64 respons, dipisah server/akun/role/URL/filter/halaman. Hasil autentikasi, pengguna Admin, dan daftar kehadiran tidak di-cache.
+- [x] Tombol Muat ulang memaksa pembacaan ulang halaman aktif. Mutasi menghapus cache terkait sebelum dan sesudah request, termasuk ketika koneksi gagal; respons baca yang dimulai sebelum invalidasi tidak mengisi ulang cache lama.
+- [x] Cache dibersihkan saat keluar/ganti server/akun. Request tulis dan validasi kuota/akses/kode absensi tetap menuju Laravel.
+- [x] OpenAPI, generator kontrak, API.md dan README Android disesuaikan. Environment Postman tidak ditimpa.
+- [x] Fixture tes DemoSeeder disesuaikan ke email `relawan@gmail.com` sesuai seeder; akun utama tidak disentuh.
+
+| Verifikasi optimasi | Hasil |
+| --- | --- |
+| Laravel PHPUnit, SQLite memory eksplisit | 29 tes lolos, 149 assertion; 1 tes konkurensi opt-in dilewati. |
+| Pint pada PHP yang diubah | Lulus. |
+| Android build debug dan APK instrumentation | Lulus. |
+| Unit test Android | 19 lulus: 9 kontrak HTTP, 9 kebijakan cache, 1 tes bawaan. |
+| Instrumentation emulator API 37 | `OK (7 tests)`, 58,271 detik, termasuk alur Laravel terisolasi. |
+| Hitungan HTTP melalui MockWebServer pada emulator | Dua pembacaan URL yang sama menjadi 1 request; refresh menambah request; setelah mutasi dan saat ganti akun, pembacaan kembali menghubungi server. Cache bertahan saat Activity recreate. |
+| Lint debug | 0 error, 53 warning. |
+| Kontrak OpenAPI | Model sesuai generator; semua referensi schema lokal terhubung. |
+| Whitespace Git | `git diff --check` lulus. |
+
+Cache ini tidak menjalankan polling otomatis. Perubahan dari perangkat lain diambil saat halaman dimuat lagi setelah TTL habis, atau ketika pengguna menekan Muat ulang. Cache hanya di memori, tidak menyediakan mode offline permanen. Pengujian perangkat memakai emulator yang dipilih secara eksplisit; HP fisik yang sedang terhubung tidak dipakai untuk tes. Tidak ada migrasi/seeder pada database utama. Server dan emulator uji dihentikan setelah verifikasi. Perubahan tetap lokal pada `andro-backend`, belum commit/push.
+
+## Integrasi Android pada 6 November 2026 — branch andro-backend
+
+Status terkini: Android memakai data API Laravel melalui Retrofit 3.0.0. Catatan bertanggal di bawah bagian ini merekam tahap sebelumnya, termasuk saat UI masih memakai data contoh.
+
+- [x] Branch `andro-backend` dibuat dari `main`; perubahan masih lokal, belum di-commit/push.
+- [x] Auth server (login/daftar/me/logout), role server, token AES-GCM Android Keystore, pemulihan sesi, dan respons 401.
+- [x] Dashboard, kegiatan, pencarian/filter/paginasi, daftar/batal, Kegiatanku dengan catatan arsip, peserta, CRUD tugas/status, dan arsip massal.
+- [x] Pemilih tanggal/waktu dan ISO 8601 dengan zona waktu.
+- [x] Sesi absensi dan kode nyata dari server, absensi relawan, serta daftar kehadiran.
+- [x] Sampul/dokumentasi multipart, batas foto 5 MB, keterangan dan arsip foto, profil, riwayat, serta pengelolaan pengguna Admin.
+- [x] Welcome XML dan sumber teksnya dipertahankan. Halaman lain tetap Kotlin, Nunito dan palet teal-sage tetap digunakan.
+- [x] Koneksi dapat diatur di halaman masuk. HTTP debug lokal diizinkan; release memakai HTTPS. API tetap `/api/`.
+- [x] Pesan validasi pada field, loading/kosong/error/retry, pembatalan request lama, dan pencegahan aksi tulis ganda. Pesan lama dibersihkan saat berpindah halaman.
+
+| Pemeriksaan terbaru | Hasil |
+| --- | --- |
+| `:app:assembleDebug :app:assembleDebugAndroidTest` | Lulus; APK debug dibangun. |
+| `:app:testDebugUnitTest` | 10 tes lulus: 9 kontrak HTTP/DTO dan 1 tes bawaan. |
+| `:app:lintDebug` | 0 error, 53 warning, terutama resource/string/dependensi dan HTTP khusus debug. |
+| `:app:assembleRelease` | Lulus; APK unsigned untuk pemeriksaan build, belum signing/distribusi produksi. |
+| `:app:connectedDebugAndroidTest` dengan argumen server uji | 6 tes lulus pada emulator API 37. |
+| Instrumentation ulang setelah perbaikan tampilan | `OK (6 tests)`, 44,78 detik; screenshot setelah data dimuat diperiksa. |
+| API yang diuji | Laravel dari checkout ini, SQLite dan storage terisolasi di workspace, port 8765. `.env`, database MySQL, dan akun utama tidak diubah. |
+| Koneksi perangkat | `10.0.2.2:8765` timeout pada host ini; ADB reverse dan `127.0.0.1:8765/api/` berhasil. |
+| Pemeriksaan source | `git diff --check` lulus; backend dan resource Welcome tidak berubah. |
+
+Tes perangkat mencakup Welcome XML, validasi login tanpa mode demo, token terenkripsi dan terikat server, retry saat server tidak terjangkau, serta alur integrasi Laravel. Alur tersebut menjalankan pendaftaran akun, kredensial salah/benar, tiga role, pendaftaran kegiatan, tugas dan perubahan status, absensi berkode, upload/edit/arsip dokumentasi, edit kegiatan melalui UI, pembuatan pengguna Admin, larangan akses daftar pengguna bagi relawan, riwayat dan pencabutan token. Sebagian fixture/pemeriksaan memakai Retrofit langsung; bukan seluruh endpoint diuji melalui ketukan UI.
+
+Batas verifikasi: pemilih file/sampul pada perangkat fisik, API 24, koneksi Wi-Fi pengguna, MySQL utama, dan signing/deployment publik belum diuji. Draft formulir belum dipulihkan saat rotasi. Panduan koneksi dan perintah pengujian ada di `android/README.md`. Server uji dan emulator sementara dihentikan setelah verifikasi.
+
 
 - [x] Laravel khusus API dan Sanctum terpasang.
 - [x] Migration dan model sesuai rancangan database.
@@ -68,8 +122,8 @@ Petunjuk lengkap dan cara mengulang tes konkurensi ada di [docs/API.md](docs/API
 - [x] lintDebug selesai tanpa error. Peringatan mencakup versi dependensi bawaan dan resource desain yang belum dipakai; laporan tersedia di android/app/build/reports/lint-results-debug.html.
 - [x] Screenshot asli emulator diperiksa untuk login, beranda, jelajah, detail, dashboard koordinator/admin; dashboard juga diperiksa pada lebar 360 dp dan font scale 130 persen. Pengaturan emulator dipulihkan.
 - [x] git diff --check lulus. Tidak ada perubahan backend maupun database dalam tahap UI ini.
-- [ ] Integrasi Retrofit, token Sanctum, API tiga role, dan unggah dokumentasi ke Laravel.
-- [ ] Ganti formulir tanggal/waktu contoh dengan pemilih terstruktur serta ISO 8601.
+- [x] Integrasi Retrofit, token Sanctum, API tiga role, dan unggah dokumentasi ke Laravel (selesai 6 November 2026).
+- [x] Ganti formulir tanggal/waktu contoh dengan pemilih terstruktur serta ISO 8601 (selesai 6 November 2026).
 - [ ] Verifikasi pada HP fisik, Android API 24, dan skenario jaringan nyata.
 
 UI ini menggunakan PreviewState lokal, bukan autentikasi atau otorisasi produksi. Pemilih peran hanya untuk pratinjau. Data demo berada dalam ViewModel dan bertahan selama proses aplikasi, termasuk recreate Activity. Draft formulir belum dipertahankan saat rotasi. Akses foto lokal belum berarti unggah ke server.

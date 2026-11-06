@@ -1,6 +1,5 @@
 package com.example.relawanku
 
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
@@ -15,35 +14,66 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
+import com.example.relawanku.data.*
 import com.example.relawanku.ui.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputLayout
+import java.util.concurrent.Executors
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
-    lateinit var state: PreviewState
+    lateinit var state: AppState
     lateinit var ui: UiKit
+    lateinit var session: SessionStore
+    lateinit var api: ApiService
     private lateinit var host: FrameLayout
     private lateinit var navigation: BottomNavigationView
     private val handler = Handler(Looper.getMainLooper())
+    private val uploadExecutor = Executors.newSingleThreadExecutor()
+    private val calls = mutableSetOf<Call<*>>()
+    private var generation = 0
     private var rendering = false
     private var navigationRole: Role? = null
-    private val photoPicker =
+    private var overlay: View? = null
+    private var mutating = false
+    private var feedback: Snackbar? = null
+    private val picker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
-                try {
-                    contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
-                    state.photos
-                        .getOrPut(state.pendingPhotoEvent) { mutableListOf() }
-                        .add(uri.toString())
-                    state.history.add(0, "Menambahkan dokumentasi contoh lokal")
-                    render()
-                    notice("Foto ditambahkan ke pratinjau lokal.")
-                } catch (_: SecurityException) {
-                    notice("Foto tidak dapat dibaca. Pilih foto lain.")
+                val event = state.pendingPhotoEvent
+                val cover = state.uploadCover
+                val epoch = generation
+                block("Menyiapkan foto…")
+                uploadExecutor.execute {
+                    try {
+                        val part = UploadPart.fromUri(applicationContext, uri)
+                        runOnUiThread {
+                            unblock()
+                            if (isDestroyed || epoch != generation) {
+                                part.file.delete()
+                                return@runOnUiThread
+                            }
+                            val call =
+                                if (cover) api.cover(event, part.part)
+                                else api.uploadPhoto(event, part.part, null)
+                            write(call, cleanup = { part.file.delete() }) {
+                                render()
+                                notice(
+                                    if (cover) "Foto sampul diperbarui."
+                                    else "Dokumentasi berhasil diunggah."
+                                )
+                            }
+                        }
+                    } catch (error: Exception) {
+                        runOnUiThread {
+                            unblock()
+                            if (!isDestroyed) notice(error.message ?: "Foto belum dapat dibaca.")
+                        }
+                    }
                 }
             }
         }
@@ -53,16 +83,18 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ui = UiKit(this)
-        state = ViewModelProvider(this)[PreviewState::class.java]
+        state = ViewModelProvider(this)[AppState::class.java]
+        session = SessionStore(this)
+        api = ApiClient.create(session.baseUrl) { session.token }
         host = findViewById(R.id.screen_host)
         navigation = findViewById(R.id.bottom_navigation)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
             val bars =
                 insets.getInsets(
                     WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
                 )
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            view.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
             insets
         }
         navigation.itemIconTintList =
@@ -75,8 +107,8 @@ class MainActivity : AppCompatActivity() {
         navigation.backgroundTintList = ColorStateList.valueOf(ui.color(R.color.surface))
         navigation.elevation = 0f
         navigation.setOnItemSelectedListener { item ->
-            if (!rendering) {
-                state.tab =
+            if (!rendering && !mutating)
+                selectTab(
                     when (item.itemId) {
                         11 -> "explore"
                         12 -> "joined"
@@ -84,20 +116,16 @@ class MainActivity : AppCompatActivity() {
                         14 -> "users"
                         else -> "home"
                     }
-                state.screen = "main"
-                state.query = ""
-                state.category = "Semua"
-                render()
-            }
-            true
+                )
+            !mutating
         }
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     when {
-                        state.screen == "register" -> navigate("login")
-                        state.screen == "login" -> navigate("welcome")
+                        mutating -> notice("Tunggu sampai proses selesai.")
+                        state.screen == "login" || state.screen == "register" -> navigate("welcome")
                         state.screen in listOf("detail", "form", "history", "userform") ->
                             navigate("main")
 
@@ -111,11 +139,21 @@ class MainActivity : AppCompatActivity() {
             },
         )
         if (savedInstanceState == null) state.screen = "splash1"
+        else if (
+            state.user == null &&
+                session.token != null &&
+                state.screen !in listOf("splash1", "splash2", "welcome", "login", "register")
+        )
+            state.screen = "restore"
         render()
     }
 
     override fun onDestroy() {
+        generation++
+        calls.toList().forEach { it.cancel() }
+        calls.clear()
         handler.removeCallbacksAndMessages(null)
+        uploadExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -126,20 +164,21 @@ class MainActivity : AppCompatActivity() {
 
     fun selectTab(tab: String) {
         state.tab = tab
-        state.screen = "main"
         state.query = ""
         state.category = "Semua"
-        render()
+        navigate("main")
     }
 
-    fun openEvent(id: Int) {
+    fun openEvent(id: Long) {
         state.selectedEvent = id
         state.detailTab = "Ringkasan"
         navigate("detail")
     }
 
     fun notice(message: String) {
-        Snackbar.make(findViewById(R.id.main), message, Snackbar.LENGTH_LONG).show()
+        feedback?.dismiss()
+        feedback =
+            Snackbar.make(findViewById(R.id.main), message, Snackbar.LENGTH_LONG).also { it.show() }
     }
 
     fun confirm(
@@ -156,20 +195,13 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    fun pickPhoto() {
-        state.pendingPhotoEvent = state.selectedEvent
-        photoPicker.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
-    }
-
     fun page(title: String? = null, subtitle: String? = null, back: Boolean = false): LinearLayout {
         val view = layoutInflater.inflate(R.layout.view_page, host, false)
         host.addView(view)
         val content = view.findViewById<LinearLayout>(R.id.page_content)
-        // Limit line lengths on larger displays without shrinking text.
         view.post {
-            val max = ui.dp(640)
-            if (view.width > max) {
-                val side = (view.width - max) / 2 + ui.dp(24)
+            if (view.width > ui.dp(640)) {
+                val side = (view.width - ui.dp(640)) / 2 + ui.dp(24)
                 content.setPadding(side, ui.dp(20), side, ui.dp(32))
             }
         }
@@ -179,15 +211,294 @@ class MainActivity : AppCompatActivity() {
             content.addView(row)
             ui.gap(content)
         }
-        if (title != null) {
-            content.addView(ui.text(title, 24, 700))
+        title?.let {
+            content.addView(ui.text(it, 24, 700))
             ui.gap(content, 6)
         }
-        if (subtitle != null) {
-            content.addView(ui.text(subtitle, 14, 400, ui.muted))
+        subtitle?.let {
+            content.addView(ui.text(it, 14, 400, ui.muted))
             ui.gap(content, 20)
         }
         return content
+    }
+
+    private fun block(message: String = "Memproses…") {
+        mutating = true
+        val panel =
+            ui.column(28).apply {
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                setBackgroundColor(ui.color(R.color.background))
+                addView(ProgressBar(this@MainActivity))
+                ui.gap(this)
+                addView(ui.text(message, 16, 600).apply { gravity = Gravity.CENTER })
+            }
+        host.addView(panel, FrameLayout.LayoutParams(-1, -1))
+        overlay = panel
+    }
+
+    private fun unblock() {
+        overlay?.let { host.removeView(it) }
+        overlay = null
+        mutating = false
+    }
+
+    private fun expire() {
+        calls.toList().forEach { it.cancel() }
+        session.clear()
+        state.clear()
+        navigate("login")
+        notice("Sesi berakhir. Silakan masuk kembali.")
+    }
+
+    fun <T> request(
+        call: Call<T>,
+        failure: (ApiFailure) -> Unit = { notice(it.message) },
+        cleanup: () -> Unit = {},
+        success: (T) -> Unit,
+    ) {
+        val epoch = generation
+        val http = call.request()
+        val mutation = http.method != "GET"
+        val scope =
+            if (session.token != null && state.user != null)
+                "${session.baseUrl}|${state.user!!.id}|${state.user!!.role}"
+            else null
+        if (mutation) state.reads.afterMutation(http.url)
+        val cacheRevision = state.reads.revision
+        if (!mutation && scope != null) {
+            state.reads.get<T>(scope, http.url)?.let { cached ->
+                cleanup()
+                success(cached)
+                return
+            }
+        }
+        calls.add(call)
+        call.enqueue(
+            object : Callback<T> {
+                override fun onResponse(call: Call<T>, response: Response<T>) {
+                    calls.remove(call)
+                    if (mutation) state.reads.afterMutation(http.url)
+                    cleanup()
+                    if (isDestroyed || epoch != generation) return
+                    val body = response.body()
+                    if (response.isSuccessful && body != null) {
+                        if (!mutation && scope != null)
+                            state.reads.put(scope, http.url, body as Any, cacheRevision)
+                        success(body)
+                    } else {
+                        val error =
+                            if (response.isSuccessful)
+                                ApiFailure(message = "Respons server kosong.")
+                            else ApiFailure.http(response.code(), response.errorBody()?.string())
+                        if (error.status == 403) state.reads.clear()
+                        if (error.status == 401) expire() else failure(error)
+                    }
+                }
+
+                override fun onFailure(call: Call<T>, error: Throwable) {
+                    calls.remove(call)
+                    if (mutation) state.reads.afterMutation(http.url)
+                    cleanup()
+                    if (!call.isCanceled && !isDestroyed && epoch == generation)
+                        failure(ApiFailure.network(error))
+                }
+            }
+        )
+    }
+
+    fun <T> write(
+        call: Call<T>,
+        fields: Map<String, TextInputLayout> = emptyMap(),
+        cleanup: () -> Unit = {},
+        success: (T) -> Unit,
+    ) {
+        if (mutating) {
+            cleanup()
+            return
+        }
+        block()
+        request(
+            call,
+            failure = { error ->
+                unblock()
+                fields.values.forEach { it.error = null }
+                error.fields.forEach { (name, messages) ->
+                    fields[name]?.error = messages.firstOrNull()
+                }
+                notice(error.message)
+            },
+            cleanup = cleanup,
+        ) { value ->
+            unblock()
+            success(value)
+        }
+    }
+
+    fun <T> load(container: LinearLayout, factory: () -> Call<T>, success: (T) -> Unit) {
+        container.removeAllViews()
+        container.addView(ProgressBar(this))
+        ui.gap(container)
+        container.addView(ui.text("Memuat data…", 14, 400, ui.muted))
+        request(
+            factory(),
+            failure = { error ->
+                container.removeAllViews()
+                ui.empty(container, "Data belum dapat dimuat", error.message)
+                ui.button(container, "Coba lagi", true) { load(container, factory, success) }
+            },
+        ) { value ->
+            container.removeAllViews()
+            success(value)
+        }
+    }
+
+    fun <T> allPages(
+        factory: (Int) -> Call<ApiPage<T>>,
+        failure: (ApiFailure) -> Unit = { notice(it.message) },
+        success: (List<T>) -> Unit,
+    ) {
+        val items = mutableListOf<T>()
+        fun next(page: Int) {
+            request(factory(page), failure) { result ->
+                items.addAll(result.data)
+                if (result.currentPage < result.lastPage) next(result.currentPage + 1)
+                else success(items)
+            }
+        }
+        next(1)
+    }
+
+    fun <T> pagination(parent: LinearLayout, page: ApiPage<T>, change: (Int) -> Unit) {
+        if (page.lastPage <= 1) return
+        ui.gap(parent)
+        parent.addView(
+            ui.text(
+                "Halaman ${page.currentPage} dari ${page.lastPage} · ${page.total} data",
+                12,
+                600,
+                ui.muted,
+            )
+        )
+        if (page.currentPage > 1)
+            ui.button(parent, "Halaman sebelumnya", true) { change(page.currentPage - 1) }
+        if (page.currentPage < page.lastPage)
+            ui.button(parent, "Halaman berikutnya", true) { change(page.currentPage + 1) }
+    }
+
+    fun acceptLogin(data: LoginData) {
+        val user = data.user
+        if (user == null || Role.fromWire(user.role) == null || data.token.isBlank()) {
+            notice("Respons login belum lengkap.")
+            return
+        }
+        try {
+            session.save(data.token, data.expiresAt)
+        } catch (_: Exception) {
+            notice("Sesi belum dapat disimpan dengan aman. Silakan coba lagi.")
+            return
+        }
+        state.clear()
+        state.user = user
+        selectTab("home")
+    }
+
+    fun serverSettings() {
+        val form = ui.column(24)
+        val (box, input) =
+            ui.field(
+                form,
+                "Alamat API",
+                session.baseUrl,
+                android.text.InputType.TYPE_CLASS_TEXT or
+                    android.text.InputType.TYPE_TEXT_VARIATION_URI,
+            )
+        form.addView(
+            ui.text(
+                "Emulator: http://10.0.2.2:8000/api/\nHP: gunakan IP laptop dan jaringan Wi-Fi yang sama. Mengganti server mengakhiri sesi lokal.",
+                14,
+                400,
+                ui.muted,
+            )
+        )
+        val dialog =
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Koneksi server")
+                .setView(form)
+                .setNegativeButton("Batal", null)
+                .setPositiveButton("Simpan", null)
+                .create()
+        dialog.setOnShowListener {
+            dialog.getButton(-1).setOnClickListener {
+                try {
+                    session.setBaseUrl(input.text.toString())
+                    state.clear()
+                    api = ApiClient.create(session.baseUrl) { session.token }
+                    dialog.dismiss()
+                    navigate("login")
+                    notice("Alamat server disimpan.")
+                } catch (error: IllegalArgumentException) {
+                    box.error = error.message
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    fun pickPhoto(cover: Boolean = false) {
+        state.pendingPhotoEvent = state.selectedEvent
+        state.uploadCover = cover
+        picker.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
+    }
+
+    fun refresh() {
+        state.reads.refresh(state.screen, state.tab, state.selectedEvent)
+        render()
+    }
+
+    fun render() {
+        feedback?.dismiss()
+        feedback = null
+        generation++
+        handler.removeCallbacksAndMessages(null)
+        calls.toList().forEach { it.cancel() }
+        calls.clear()
+        unblock()
+        host.removeAllViews()
+        if (
+            state.user == null &&
+                state.screen in listOf("main", "detail", "form", "history", "userform")
+        )
+            state.screen = if (session.token != null) "restore" else "login"
+        navigation.visibility = if (state.screen == "main") View.VISIBLE else View.GONE
+        when (state.screen) {
+            "splash1",
+            "splash2" -> splash()
+
+            "welcome" -> welcome()
+            "login",
+            "register" -> AuthScreens(this).render()
+
+            "restore" -> restore()
+            "detail" -> EventScreens(this).detail()
+            "form" -> EventScreens(this).form()
+            "userform" -> ManagementScreens(this).userForm()
+            "history" -> AccountScreens(this).history()
+            else -> {
+                configureNavigation()
+                when (state.tab) {
+                    "profile" -> AccountScreens(this).profile()
+                    "users" -> ManagementScreens(this).users()
+                    "explore",
+                    "joined" -> EventScreens(this).listing()
+
+                    else ->
+                        if (state.role == Role.RELAWAN) VolunteerHome(this).render()
+                        else ManagementScreens(this).dashboard()
+                }
+            }
+        }
     }
 
     private fun configureNavigation() {
@@ -219,43 +530,35 @@ class MainActivity : AppCompatActivity() {
         rendering = false
     }
 
-    fun render() {
-        handler.removeCallbacksAndMessages(null)
-        host.removeAllViews()
-        navigation.visibility = if (state.screen == "main") View.VISIBLE else View.GONE
-        when (state.screen) {
-            "splash1",
-            "splash2" -> splash()
-
-            "welcome" -> welcome()
-
-            "login",
-            "register" -> AuthScreens(this).render()
-
-            "detail" -> EventScreens(this).detail()
-            "form" -> EventScreens(this).form()
-            "userform" -> ManagementScreens(this).userForm()
-            "history" -> history()
-            else -> {
-                configureNavigation()
-                when (state.tab) {
-                    "profile" -> profile()
-                    "explore",
-                    "joined" -> EventScreens(this).listing()
-
-                    "users" -> ManagementScreens(this).users()
-                    else ->
-                        if (state.role == Role.RELAWAN) VolunteerHome(this).render()
-                        else ManagementScreens(this).dashboard()
-                }
+    private fun restore() {
+        val p = page("Memeriksa sesi", "Menghubungkan akunmu kembali.")
+        val area = ui.column()
+        p.addView(area)
+        load(area, { api.me() }) { response ->
+            val user = response.data
+            if (user != null && Role.fromWire(user.role) != null) {
+                state.user = user
+                selectTab("home")
+            } else {
+                session.clear()
+                state.clear()
+                navigate("login")
             }
+        }
+        ui.button(p, "Atur koneksi server", true) { serverSettings() }
+        ui.button(p, "Masuk dengan akun lain", true) {
+            session.clear()
+            state.clear()
+            navigate("login")
         }
     }
 
     private fun welcome() {
         val view = layoutInflater.inflate(R.layout.screen_welcome, host, false)
         host.addView(view)
-        view.findViewById<View>(R.id.welcome_start_button).setOnClickListener { navigate("login") }
+        view.findViewById<View>(R.id.welcome_start_button).setOnClickListener {
+            navigate(if (session.token != null) "restore" else "login")
+        }
         view.findViewById<View>(R.id.welcome_register_button).setOnClickListener {
             navigate("register")
         }
@@ -312,124 +615,13 @@ class MainActivity : AppCompatActivity() {
             .start()
         handler.postDelayed(
             {
-                if (!isFinishing) {
-                    state.screen = if (first) "splash2" else "welcome"
-                    render()
-                }
+                if (!isFinishing)
+                    navigate(
+                        if (first) "splash2"
+                        else if (session.token != null) "restore" else "welcome"
+                    )
             },
             if (first) 1000L else 1300L,
         )
-    }
-
-    private fun profile() {
-        val p = page("Profil", "Ruang kecil untuk mengenal kontribusimu.")
-        val top = ui.panel(p, ui.color(R.color.sage), 24)
-        top.addView(ui.icon(R.drawable.ic_person, 48))
-        ui.gap(top)
-        top.addView(ui.text(state.displayName, 24, 700))
-        top.addView(ui.text(state.email, 14, 400, ui.muted))
-        ui.gap(top)
-        ui.badge(top, state.role.label)
-        val summary = ui.panel(p)
-        ui.meta(
-            summary,
-            R.drawable.ic_calendar,
-            "${state.joined.size} kegiatan diikuti",
-            "Setiap langkah punya arti.",
-        )
-        ui.meta(
-            summary,
-            R.drawable.ic_check,
-            "${state.attended.size} kehadiran tercatat",
-            "Terima kasih sudah hadir.",
-        )
-        ui.button(p, "Edit profil", true) {
-            val form = ui.column(24)
-            val (nameBox, name) = ui.field(form, "Nama lengkap", state.displayName)
-            val (emailBox, email) =
-                ui.field(
-                    form,
-                    "Email",
-                    state.email,
-                    android.text.InputType.TYPE_CLASS_TEXT or
-                        android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
-                )
-            val dialog =
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("Edit profil contoh")
-                    .setView(form)
-                    .setNegativeButton("Batal", null)
-                    .setPositiveButton("Simpan", null)
-                    .create()
-            dialog.setOnShowListener {
-                dialog.getButton(-1).setOnClickListener {
-                    val n = name.text.toString().trim()
-                    val e = email.text.toString().trim()
-                    nameBox.error = if (n.isBlank()) "Nama wajib diisi" else null
-                    emailBox.error =
-                        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(e).matches())
-                            "Email belum valid"
-                        else null
-                    if (nameBox.error == null && emailBox.error == null) {
-                        state.displayName = n
-                        state.email = e
-                        dialog.dismiss()
-                        render()
-                        notice("Profil contoh diperbarui.")
-                    }
-                }
-            }
-            dialog.show()
-        }
-        ui.button(p, "Riwayat aktivitas", true) { navigate("history") }
-        ui.gap(p, 24)
-        p.addView(ui.text("PRATINJAU ANTARMUKA", 12, 700, ui.primary))
-        ui.gap(p, 6)
-        p.addView(
-            ui.text(
-                "Data pada tahap ini adalah contoh lokal. Perubahan belum dikirim ke server Laravel.",
-                14,
-                400,
-                ui.muted,
-            )
-        )
-        ui.button(p, "Ganti peran pratinjau", true) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Lihat sebagai")
-                .setItems(Role.entries.map { it.label }.toTypedArray()) { _, i ->
-                    state.role = Role.entries[i]
-                    state.tab = "home"
-                    render()
-                }
-                .show()
-        }
-        ui.button(p, "Keluar") {
-            confirm(
-                "Keluar dari pratinjau?",
-                "Kamu bisa masuk kembali dan memilih peran lain.",
-                "Keluar",
-            ) {
-                state.screen = "login"
-                state.tab = "home"
-                render()
-            }
-        }
-    }
-
-    private fun history() {
-        val p = page("Riwayat aktivitas", "Jejak kontribusi dan aktivitas contohmu.", true)
-        if (state.history.isEmpty())
-            ui.empty(
-                p,
-                "Belum ada aktivitas",
-                "Aktivitas akan muncul setelah kamu mengikuti kegiatan.",
-            )
-        else
-            state.history.forEach {
-                val c = ui.panel(p)
-                c.addView(ui.text(it, 16, 600))
-                ui.gap(c, 8)
-                c.addView(ui.text("Sesi pratinjau ini", 12, 400, ui.muted))
-            }
     }
 }

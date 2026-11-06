@@ -52,7 +52,7 @@ Relawanku dirancang untuk mendukung perjalanan relawan sejak menemukan kegiatan 
 
 Seluruh peran menggunakan **satu aplikasi Android**, dengan halaman dan menu yang menyesuaikan peran setelah pengguna masuk.
 
-> **Status repositori:** backend REST API Laravel 13 dan UI Android Kotlin/XML tersedia. UI Android masih memakai data demo lokal; integrasi Retrofit dan autentikasi server menjadi tahap berikutnya.
+> **Status repositori:** aplikasi Android Kotlin/XML sudah terhubung ke REST API Laravel melalui Retrofit pada branch `andro-backend`. Login memakai Sanctum dan role server; data kegiatan, tugas, absensi, dokumentasi, profil, dan pengguna berasal dari API.
 
 ## Struktur Repositori
 
@@ -70,7 +70,7 @@ relawanku/
 
 Buka `backend` di VS Code dan `android` di Android Studio setelah proyek Android dibuat. Semua commit dan push dilakukan melalui repositori induk yang sama, dengan satu folder `.git` di akar proyek.
 
-Folder `android` sudah berisi UI interaktif Kotlin/XML untuk Relawan, Koordinator, dan Admin. Buka folder ini di Android Studio, jalankan `app`, lalu gunakan **Coba dengan data contoh** untuk menjelajahi tampilan. Data UI belum terhubung ke API. Petunjuk dan batas pratinjau ada di [panduan Android](android/README.md).
+Folder `android` berisi aplikasi untuk Relawan, Koordinator, dan Admin. Jalankan backend, buka folder Android di Android Studio, lalu masuk dengan akun server. Menu **Atur koneksi server** tersedia pada halaman masuk. Welcome tetap memakai XML, sedangkan halaman lain memakai renderer Kotlin. Ikuti [panduan Android](android/README.md) untuk emulator, HP, dan pengujian.
 
 ## Backend API
 
