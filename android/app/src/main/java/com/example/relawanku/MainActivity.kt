@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private var overlay: View? = null
     private var mutating = false
     private var feedback: Snackbar? = null
+    private var keyboardVisible = false
     private val picker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -88,15 +89,45 @@ class MainActivity : AppCompatActivity() {
         api = ApiClient.create(session.baseUrl) { session.token }
         host = findViewById(R.id.screen_host)
         navigation = findViewById(R.id.bottom_navigation)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
+        // The shell owns all insets; Material must not apply navigation-bar padding a second time.
+        ViewCompat.setOnApplyWindowInsetsListener(navigation) { _, insets -> insets }
+        val root = findViewById<View>(R.id.main)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val bars =
                 insets.getInsets(
                     WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
                 )
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            view.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
-            insets
+            keyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            val showNavigation = state.screen == "main" && !keyboardVisible
+            navigation.visibility = if (showNavigation) View.VISIBLE else View.GONE
+            findViewById<View>(R.id.navigation_divider).visibility = navigation.visibility
+            view.setPadding(bars.left, bars.top, bars.right, 0)
+            val height = ui.dp(64) + bars.bottom
+            if (navigation.layoutParams.height != height) {
+                navigation.layoutParams = navigation.layoutParams.apply { this.height = height }
+            }
+            navigation.setPadding(0, 0, 0, bars.bottom)
+            host.setPadding(
+                0,
+                0,
+                0,
+                if (keyboardVisible) ime.bottom else if (showNavigation) 0 else bars.bottom,
+            )
+            if (keyboardVisible)
+                host.post {
+                    currentFocus
+                        ?.takeIf { it is android.widget.EditText }
+                        ?.let { focused ->
+                            val rect = android.graphics.Rect()
+                            focused.getDrawingRect(rect)
+                            focused.requestRectangleOnScreen(rect, false)
+                        }
+                }
+            WindowInsetsCompat.CONSUMED
         }
+        navigation.itemActiveIndicatorWidth = ui.dp(48)
+        navigation.itemActiveIndicatorHeight = ui.dp(28)
         navigation.itemIconTintList =
             ColorStateList(
                 arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
@@ -124,6 +155,7 @@ class MainActivity : AppCompatActivity() {
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     when {
+                        keyboardVisible -> hideKeyboard()
                         mutating -> notice("Tunggu sampai proses selesai.")
                         state.screen == "login" || state.screen == "register" -> navigate("welcome")
                         state.screen in listOf("detail", "form", "history", "userform") ->
@@ -158,6 +190,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun navigate(screen: String) {
+        hideKeyboard()
         state.screen = screen
         render()
     }
@@ -195,28 +228,36 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun hideKeyboard() {
+        currentFocus?.clearFocus()
+        androidx.core.view
+            .WindowInsetsControllerCompat(window, findViewById(R.id.main))
+            .hide(WindowInsetsCompat.Type.ime())
+    }
+
     fun page(title: String? = null, subtitle: String? = null, back: Boolean = false): LinearLayout {
         val view = layoutInflater.inflate(R.layout.view_page, host, false)
         host.addView(view)
         val content = view.findViewById<LinearLayout>(R.id.page_content)
+        val header = view.findViewById<LinearLayout>(R.id.page_header)
+        if (title != null || back) {
+            header.visibility = View.VISIBLE
+            if (back)
+                header.addView(ui.iconAction(R.drawable.ic_back, "Kembali") { navigate("main") })
+            header.addView(
+                ui.text(title ?: "Detail kegiatan", 20, 700),
+                LinearLayout.LayoutParams(0, -2, 1f).apply { if (back) marginStart = ui.dp(12) },
+            )
+        }
         view.post {
-            if (view.width > ui.dp(640)) {
-                val side = (view.width - ui.dp(640)) / 2 + ui.dp(24)
-                content.setPadding(side, ui.dp(20), side, ui.dp(32))
-            }
-        }
-        if (back) {
-            val row = ui.row()
-            row.addView(ui.iconAction(R.drawable.ic_back, "Kembali") { navigate("main") })
-            content.addView(row)
-            ui.gap(content)
-        }
-        title?.let {
-            content.addView(ui.text(it, 24, 700))
-            ui.gap(content, 6)
+            val side =
+                if (view.width > ui.dp(640)) (view.width - ui.dp(640)) / 2 + ui.dp(20)
+                else ui.dp(20)
+            content.setPadding(side, ui.dp(16), side, ui.dp(24))
+            header.setPadding(side, ui.dp(8), side, ui.dp(8))
         }
         subtitle?.let {
-            content.addView(ui.text(it, 14, 400, ui.muted))
+            content.addView(ui.text(it, 13, 400, ui.muted))
             ui.gap(content, 20)
         }
         return content
@@ -318,6 +359,7 @@ class MainActivity : AppCompatActivity() {
             cleanup()
             return
         }
+        hideKeyboard()
         block()
         request(
             call,
@@ -471,7 +513,10 @@ class MainActivity : AppCompatActivity() {
                 state.screen in listOf("main", "detail", "form", "history", "userform")
         )
             state.screen = if (session.token != null) "restore" else "login"
-        navigation.visibility = if (state.screen == "main") View.VISIBLE else View.GONE
+        navigation.visibility =
+            if (state.screen == "main" && !keyboardVisible) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.navigation_divider).visibility = navigation.visibility
+        ViewCompat.requestApplyInsets(findViewById(R.id.main))
         when (state.screen) {
             "splash1",
             "splash2" -> splash()

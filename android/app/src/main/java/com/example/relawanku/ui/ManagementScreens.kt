@@ -10,31 +10,60 @@ class ManagementScreens(private val a: MainActivity) {
     private val s = a.state
 
     fun dashboard() {
-        val p =
-            a.page(
-                "Dashboard ${s.role.label}",
-                "Halo, ${s.displayName}. Kelola kegiatan dan kontribusi bersama.",
-            )
+        val p = a.page()
+        val admin = s.role == Role.ADMIN
+        u.dashboardHeader(
+            p,
+            s.role.label,
+            s.displayName,
+            if (admin) "Ringkasan komunitas" else "Ringkasan kegiatan",
+        ) {
+            a.selectTab("profile")
+        }
         val area = u.column()
         p.addView(area)
         a.load(area, { a.api.dashboard() }) { response ->
             response.data?.let { d ->
-                val panel = u.panel(area)
-                panel.addView(
+                val hero = u.panel(area, u.color(com.example.relawanku.R.color.primary_dark), 20)
+                hero.addView(
                     u.text(
-                        "${d.activities} kegiatan · ${d.activeActivities} aktif",
-                        22,
+                            "OPERASIONAL KEGIATAN",
+                            10,
+                            700,
+                            u.color(com.example.relawanku.R.color.sage),
+                        )
+                        .apply { letterSpacing = .12f }
+                )
+                u.gap(hero, 12)
+                hero.addView(
+                    u.text(
+                        d.activeActivities.toString() + " kegiatan aktif",
+                        26,
                         700,
-                        u.primary,
+                        u.color(com.example.relawanku.R.color.surface),
                     )
                 )
-                u.gap(panel)
-                panel.addView(
+                u.gap(hero, 6)
+                hero.addView(
                     u.text(
-                        "${d.registrations} peserta aktif\n${d.attendances} kehadiran" +
-                            (if (s.role == Role.ADMIN) "\n${d.users} pengguna" else ""),
-                        16,
+                        if (admin) "Pantau pelaksanaan dan partisipasi seluruh komunitas."
+                        else "Atur pelaksanaan dan dampingi relawanmu.",
+                        13,
+                        400,
+                        u.color(com.example.relawanku.R.color.sage),
                     )
+                )
+                u.section(area, "Ringkasan")
+                u.metrics(
+                    area,
+                    listOf(
+                        "Total kegiatan" to d.activities,
+                        "Peserta aktif" to d.registrations,
+                        "Kehadiran" to d.attendances,
+                        (if (admin) "Pengguna" else "Belum absensi") to
+                            (if (admin) d.users
+                            else (d.registrations - d.attendances).coerceAtLeast(0)),
+                    ),
                 )
             }
         }
@@ -42,9 +71,32 @@ class ManagementScreens(private val a: MainActivity) {
             s.selectedEvent = 0
             a.navigate("form")
         }
-        u.button(p, "Kelola kegiatan", true) { a.selectTab("explore") }
-        if (s.role == Role.ADMIN) u.button(p, "Kelola pengguna", true) { a.selectTab("users") }
-        u.button(p, "Riwayat aktivitas", true) { a.navigate("history") }
+        u.section(p, "Ruang kerja")
+        u.actionRow(
+            p,
+            "Kelola kegiatan",
+            "Jadwal, peserta, tugas, dan absensi",
+            com.example.relawanku.R.drawable.ic_calendar,
+        ) {
+            a.selectTab("explore")
+        }
+        if (admin)
+            u.actionRow(
+                p,
+                "Kelola pengguna",
+                "Akun dan hak akses komunitas",
+                com.example.relawanku.R.drawable.ic_people,
+            ) {
+                a.selectTab("users")
+            }
+        u.actionRow(
+            p,
+            "Riwayat aktivitas",
+            "Tinjau aktivitas akunmu",
+            com.example.relawanku.R.drawable.ic_clock,
+        ) {
+            a.navigate("history")
+        }
         u.button(p, "Muat ulang", true) { a.refresh() }
     }
 

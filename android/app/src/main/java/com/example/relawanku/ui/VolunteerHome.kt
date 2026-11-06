@@ -6,27 +6,42 @@ import com.example.relawanku.R
 class VolunteerHome(private val a: MainActivity) {
     fun render() {
         val u = a.ui
-        val p =
-            a.page(
-                "Halo, ${a.state.displayName.substringBefore(' ')}!",
-                "Langkah kecilmu bisa berarti besar untuk sesama.",
-            )
-        val hero = u.panel(p, u.primary, 24)
-        hero.addView(u.text("Ambil peran.\nHadirkan perubahan.", 28, 700, u.color(R.color.surface)))
-        u.button(hero, "Temukan kegiatan", true) { a.selectTab("explore") }
+        val p = a.page()
+        u.dashboardHeader(p, "Relawan", a.state.displayName, "Ruang kontribusi") {
+            a.selectTab("profile")
+        }
+        val hero = u.panel(p, u.primary, 20)
+        hero.background =
+            android.graphics.drawable
+                .GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                    intArrayOf(u.color(R.color.primary_dark), u.primary),
+                )
+                .apply { cornerRadius = u.dp(16).toFloat() }
+        hero.addView(
+            u.text("AMBIL BAGIAN", 10, 700, u.color(R.color.sage)).apply { letterSpacing = .12f }
+        )
+        u.gap(hero, 10)
+        hero.addView(u.text("Temukan kegiatan\nyang berarti.", 24, 700, u.color(R.color.surface)))
+        u.gap(hero, 8)
+        hero.addView(
+            u.text("Berkontribusi bersama komunitas yang peduli.", 13, 400, u.color(R.color.sage))
+        )
+        u.gap(hero, 6)
+        u.inverseButton(hero, "Temukan kegiatan") { a.selectTab("explore") }
+        u.section(p, "Kontribusimu")
         val stats = u.column()
         p.addView(stats)
         a.load(stats, { a.api.dashboard() }) { response ->
             response.data?.let { d ->
-                val panel = u.panel(stats)
-                panel.addView(u.text("Kontribusimu", 18, 700))
-                panel.addView(
-                    u.text(
-                        "${d.registrations} pendaftaran aktif · ${d.attendances} kehadiran\n${d.pendingTasks} tugas belum selesai",
-                        15,
-                        400,
-                        u.muted,
-                    )
+                u.metrics(
+                    stats,
+                    listOf(
+                        "Terdaftar" to d.registrations,
+                        "Kehadiran" to d.attendances,
+                        "Tugas aktif" to d.pendingTasks,
+                    ),
+                    3,
                 )
             }
         }

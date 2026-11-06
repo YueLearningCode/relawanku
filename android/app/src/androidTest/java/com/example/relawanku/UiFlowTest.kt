@@ -406,7 +406,7 @@ class UiFlowTest {
                 }
                 await(scenario, "Dashboard statistics missing") { a ->
                     views(a.findViewById(android.R.id.content)).filterIsInstance<TextView>().any {
-                        it.text.toString().contains(" kegiatan · ")
+                        it.text.toString().contains(" kegiatan aktif")
                     }
                 }
                 capture("coordinator-dashboard")

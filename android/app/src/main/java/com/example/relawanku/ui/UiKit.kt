@@ -40,14 +40,14 @@ class UiKit(val context: Context) {
             },
         )
 
-    fun text(value: String, size: Int = 16, weight: Int = 400, tint: Int = ink): TextView =
+    fun text(value: String, size: Int = 15, weight: Int = 400, tint: Int = ink): TextView =
         TextView(context).apply {
             text = value
             textSize = size.toFloat()
             typeface = font(weight)
             setTextColor(tint)
             includeFontPadding = false
-            setLineSpacing(dp(3).toFloat(), 1f)
+            setLineSpacing(dp(2).toFloat(), 1f)
             layoutParams = LinearLayout.LayoutParams(-1, -2)
         }
 
@@ -69,7 +69,7 @@ class UiKit(val context: Context) {
         parent.addView(Space(context), LinearLayout.LayoutParams(1, dp(height)))
     }
 
-    fun background(fill: Int, radius: Int = 18, stroke: Int? = null) =
+    fun background(fill: Int, radius: Int = 14, stroke: Int? = null) =
         GradientDrawable().apply {
             setColor(fill)
             cornerRadius = dp(radius).toFloat()
@@ -85,7 +85,7 @@ class UiKit(val context: Context) {
             it.background =
                 background(
                     fill,
-                    20,
+                    14,
                     if (fill == color(R.color.surface)) color(R.color.outline) else null,
                 )
             parent.addView(it)
@@ -102,12 +102,15 @@ class UiKit(val context: Context) {
             text = label
             isAllCaps = false
             typeface = font(700)
-            textSize = 16f
-            cornerRadius = dp(16)
+            textSize = 14f
+            cornerRadius = dp(12)
             backgroundTintList =
-                ColorStateList.valueOf(if (secondary) color(R.color.sage) else primary)
-            setTextColor(if (secondary) color(R.color.primary_dark) else Color.WHITE)
-            minimumHeight = dp(56)
+                ColorStateList.valueOf(if (secondary) color(R.color.surface) else primary)
+            setTextColor(if (secondary) ink else Color.WHITE)
+            strokeWidth = if (secondary) dp(1) else 0
+            strokeColor = ColorStateList.valueOf(color(R.color.outline))
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            minimumHeight = dp(48)
             insetTop = 0
             insetBottom = 0
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) }
@@ -129,7 +132,7 @@ class UiKit(val context: Context) {
             contentDescription = label
             isClickable = true
             isFocusable = true
-            background = background(color(R.color.sage), 16)
+            background = background(color(R.color.surface), 12, color(R.color.outline))
             addView(icon(id), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
             setOnClickListener { action() }
         }
@@ -142,7 +145,7 @@ class UiKit(val context: Context) {
     ) {
         gap(parent, 12)
         val r = row()
-        val titleView = text(title, 20, 700)
+        val titleView = text(title, 18, 700)
         r.addView(titleView, LinearLayout.LayoutParams(0, -2, 1f))
         if (actionLabel != null) {
             r.addView(
@@ -175,12 +178,15 @@ class UiKit(val context: Context) {
                     hint = label
                     boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
                     setBoxCornerRadii(
-                        dp(14).toFloat(),
-                        dp(14).toFloat(),
-                        dp(14).toFloat(),
-                        dp(14).toFloat(),
+                        dp(12).toFloat(),
+                        dp(12).toFloat(),
+                        dp(12).toFloat(),
+                        dp(12).toFloat(),
                     )
                     boxStrokeColor = primary
+                    boxBackgroundColor = color(R.color.surface)
+                    boxStrokeWidth = dp(1)
+                    boxStrokeWidthFocused = dp(2)
                     layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }
                 }
         val edit =
@@ -188,10 +194,16 @@ class UiKit(val context: Context) {
                 inputType = type
                 setText(value)
                 typeface = font()
-                textSize = 16f
-                minimumHeight = dp(56)
+                textSize = 14f
+                minimumHeight = dp(48)
                 setTextColor(ink)
                 setSingleLine(type and InputType.TYPE_TEXT_FLAG_MULTI_LINE == 0)
+                imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
+                if (type and InputType.TYPE_TEXT_FLAG_MULTI_LINE != 0) {
+                    minLines = 3
+                    maxLines = 5
+                    gravity = Gravity.TOP or Gravity.START
+                }
             }
         box.addView(edit)
         if (
@@ -250,8 +262,8 @@ class UiKit(val context: Context) {
     ) {
         parent.addView(
             text(label, 12, 600, tint).apply {
-                background = background(fill, 12)
-                setPadding(dp(12), dp(7), dp(12), dp(7))
+                background = background(fill, 8)
+                setPadding(dp(10), dp(5), dp(10), dp(5))
                 layoutParams = LinearLayout.LayoutParams(-2, -2)
             }
         )
@@ -269,13 +281,147 @@ class UiKit(val context: Context) {
     }
 
     fun empty(parent: LinearLayout, title: String, description: String) {
-        val p = panel(parent, color(R.color.soft), 24)
-        p.addView(icon(R.drawable.ic_leaf, 40))
-        gap(p)
-        p.addView(text(title, 20, 700))
+        val p = panel(parent, color(R.color.surface), 18)
+        val heading = row()
+        heading.addView(icon(R.drawable.ic_info, 22, muted))
+        heading.addView(
+            text(title, 16, 700),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(10) },
+        )
+        p.addView(heading)
         gap(p, 8)
         p.addView(text(description, 14, 400, muted))
     }
+
+    fun eyebrow(parent: LinearLayout, value: String) {
+        parent.addView(
+            text(value.uppercase(java.util.Locale.ROOT), 10, 700, muted).apply {
+                letterSpacing = .12f
+            }
+        )
+        gap(parent, 8)
+    }
+
+    fun avatar(name: String, size: Int = 48): TextView =
+        text(
+                name
+                    .trim()
+                    .split(Regex("\\s+"))
+                    .filter { it.isNotEmpty() }
+                    .take(2)
+                    .joinToString("") { it.take(1) }
+                    .uppercase(java.util.Locale.ROOT),
+                17,
+                700,
+                primary,
+            )
+            .apply {
+                gravity = Gravity.CENTER
+                background = background(color(R.color.sage), size / 2)
+                layoutParams = LinearLayout.LayoutParams(dp(size), dp(size))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+
+    fun dashboardHeader(
+        parent: LinearLayout,
+        role: String,
+        name: String,
+        title: String,
+        openProfile: () -> Unit,
+    ) {
+        val top = row()
+        val labels = column()
+        eyebrow(labels, "Relawanku / " + role)
+        labels.addView(text(title, 24, 700))
+        top.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(
+            avatar(name).apply {
+                contentDescription = "Buka profil"
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { openProfile() }
+            }
+        )
+        parent.addView(top)
+        gap(parent, 6)
+        parent.addView(text("Selamat datang, " + name.substringBefore(' ') + ".", 13, 400, muted))
+        gap(parent, 22)
+    }
+
+    fun metrics(parent: LinearLayout, values: List<Pair<String, Int>>, columns: Int = 2) {
+        for (chunk in values.chunked(columns)) {
+            val line = row()
+            chunk.forEachIndexed { index, (label, number) ->
+                val card = column(if (columns == 3) 12 else 16)
+                card.background = background(color(R.color.surface), 14, color(R.color.outline))
+                card.addView(
+                    text(String.format(java.util.Locale.getDefault(), "%d", number), 26, 700)
+                )
+                gap(card, 6)
+                card.addView(
+                    text(label, 12, 600, muted).apply {
+                        if (columns == 3) minLines = 2
+                        maxLines = 2
+                    }
+                )
+                line.addView(
+                    card,
+                    LinearLayout.LayoutParams(0, -2, 1f).apply {
+                        if (index > 0) marginStart = dp(10)
+                    },
+                )
+            }
+            parent.addView(line)
+            gap(parent, 12)
+        }
+    }
+
+    fun actionRow(
+        parent: LinearLayout,
+        title: String,
+        subtitle: String,
+        icon: Int,
+        danger: Boolean = false,
+        action: () -> Unit,
+    ) {
+        val line = row()
+        line.minimumHeight = dp(68)
+        line.setPadding(dp(14), dp(12), dp(14), dp(12))
+        line.background = background(color(R.color.surface), 12, color(R.color.outline))
+        val tint = if (danger) color(R.color.error) else primary
+        line.addView(icon(icon, 22, tint))
+        val words = column()
+        words.addView(text(title, 14, 700, if (danger) tint else ink))
+        if (subtitle.isNotBlank()) {
+            gap(words, 3)
+            words.addView(text(subtitle, 12, 400, muted))
+        }
+        line.addView(
+            words,
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                marginStart = dp(12)
+                marginEnd = dp(8)
+            },
+        )
+        line.addView(icon(R.drawable.ic_arrow, 18, muted))
+        line.isClickable = true
+        line.isFocusable = true
+        line.setOnClickListener { action() }
+        val attrs =
+            context.obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground))
+        line.foreground = attrs.getDrawable(0)
+        attrs.recycle()
+        parent.addView(line)
+        gap(parent, 10)
+    }
+
+    fun inverseButton(parent: LinearLayout, label: String, action: () -> Unit) =
+        button(parent, label, true, action).apply {
+            backgroundTintList = ColorStateList.valueOf(color(R.color.surface))
+            setTextColor(color(R.color.primary_dark))
+            strokeWidth = 0
+        }
 
     fun eventCard(
         parent: LinearLayout,
@@ -285,6 +431,17 @@ class UiKit(val context: Context) {
     ) {
         val card = LayoutInflater.from(context).inflate(R.layout.item_activity, parent, false)
         image(card.findViewById(R.id.card_image), event.coverUrl, event.image)
+        card.findViewById<ImageView>(R.id.card_image).contentDescription =
+            if (event.coverUrl == null) "Ilustrasi kategori " + event.category
+            else "Sampul " + event.title
+        card
+            .findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(
+                R.id.card_capacity
+            )
+            .progress =
+            if (event.quota > 0)
+                ((event.participants.toLong() * 100) / event.quota).toInt().coerceIn(0, 100)
+            else 0
         card.findViewById<TextView>(R.id.card_category).text = event.category
         card.findViewById<TextView>(R.id.card_date).text =
             event.date + " · " + Dates.time(event.startsAt)

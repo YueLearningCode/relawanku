@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="18dp"
-    app:cardCornerRadius="20dp"
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
     app:strokeWidth="1dp"
     app:strokeColor="@color/outline"
@@ -17,7 +17,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="164dp">
+            android:layout_height="152dp">
 
             <ImageView
                 android:id="@+id/card_image"
@@ -45,7 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="18dp">
+            android:padding="16dp">
 
             <TextView
                 android:id="@+id/card_date"
@@ -57,10 +57,12 @@
 
             <TextView
                 android:id="@+id/card_title"
+                android:maxLines="2"
+                android:ellipsize="end"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/ink" />
 
@@ -72,10 +74,21 @@
                 android:textSize="14sp"
                 android:textColor="@color/muted" />
 
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/card_capacity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:importantForAccessibility="no"
+                app:indicatorColor="@color/primary"
+                app:trackColor="@color/outline"
+                app:trackThickness="3dp"
+                app:trackCornerRadius="2dp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:gravity="center_vertical">
 
                 <TextView
@@ -88,6 +101,9 @@
 
                 <TextView
                     android:id="@+id/card_status"
+                    android:maxWidth="144dp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_soft"
