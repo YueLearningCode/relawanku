@@ -111,6 +111,6 @@ class AuthScreens(private val a: MainActivity) {
         }
         u.gap(p)
         u.button(p, "Atur koneksi server", true) { a.serverSettings() }
-        p.addView(u.text(a.session.baseUrl, 12, 400, u.muted))
+//        p.addView(u.text(a.session.baseUrl, 12, 400, u.muted))
     }
 }

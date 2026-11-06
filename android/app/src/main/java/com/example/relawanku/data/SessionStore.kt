@@ -25,6 +25,7 @@ class SessionStore(context: Context) {
 
     @Volatile
     private var loaded = false
+
     @Volatile
     private var cached: String? = null
     val token: String?
