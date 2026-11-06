@@ -7,19 +7,25 @@ import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.relawanku.data.*
+import com.example.relawanku.data.ApiClient
+import com.example.relawanku.data.Dates
+import com.example.relawanku.data.SessionStore
 import com.example.relawanku.ui.Role
 import com.google.android.material.textfield.TextInputLayout
-import java.util.Date
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import retrofit2.Response
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 class UiFlowTest {
@@ -209,16 +215,16 @@ class UiFlowTest {
         val public = ApiClient.create(base) { null }
         fun login(role: String) =
             ok(
-                    public
-                        .login(
-                            mapOf(
-                                "email" to "$role@gmail.com",
-                                "password" to password,
-                                "device_name" to "Android integration test",
-                            )
+                public
+                    .login(
+                        mapOf(
+                            "email" to "$role@gmail.com",
+                            "password" to password,
+                            "device_name" to "Android integration test",
                         )
-                        .execute()
-                )
+                    )
+                    .execute()
+            )
                 .data!!
 
         val manager = login("koordinator")
@@ -231,21 +237,21 @@ class UiFlowTest {
         val start = System.currentTimeMillis() + 3 * 86400000L
         val event =
             ok(
-                    m.createActivity(
-                            mapOf(
-                                "title" to "Android Integration $suffix",
-                                "description" to "Isolated Android integration fixture",
-                                "category" to "Lingkungan",
-                                "location" to "Bengkulu",
-                                "quota" to 10,
-                                "status" to "open",
-                                "starts_at" to Dates.iso(Date(start)),
-                                "ends_at" to Dates.iso(Date(start + 7200000)),
-                                "registration_deadline" to Dates.iso(Date(start - 3600000)),
-                            )
-                        )
-                        .execute()
+                m.createActivity(
+                    mapOf(
+                        "title" to "Android Integration $suffix",
+                        "description" to "Isolated Android integration fixture",
+                        "category" to "Lingkungan",
+                        "location" to "Bengkulu",
+                        "quota" to 10,
+                        "status" to "open",
+                        "starts_at" to Dates.iso(Date(start)),
+                        "ends_at" to Dates.iso(Date(start + 7200000)),
+                        "registration_deadline" to Dates.iso(Date(start - 3600000)),
+                    )
                 )
+                    .execute()
+            )
                 .data!!
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -294,15 +300,15 @@ class UiFlowTest {
                 )
                 val task =
                     ok(
-                            m.createTask(
-                                    event.id,
-                                    mapOf(
-                                        "title" to "Tugas Android $suffix",
-                                        "assigned_to" to volunteer.user!!.id,
-                                    ),
-                                )
-                                .execute()
+                        m.createTask(
+                            event.id,
+                            mapOf(
+                                "title" to "Tugas Android $suffix",
+                                "assigned_to" to volunteer.user!!.id,
+                            ),
                         )
+                            .execute()
+                    )
                         .data!!
                 scenario.onActivity { a ->
                     a.state.detailTab = "Tugas"
@@ -329,13 +335,13 @@ class UiFlowTest {
                 val now = System.currentTimeMillis()
                 ok(
                     m.updateActivity(
-                            event.id,
-                            mapOf(
-                                "starts_at" to Dates.iso(Date(now - 60000)),
-                                "ends_at" to Dates.iso(Date(now + 3600000)),
-                                "registration_deadline" to Dates.iso(Date(now - 120000)),
-                            ),
-                        )
+                        event.id,
+                        mapOf(
+                            "starts_at" to Dates.iso(Date(now - 60000)),
+                            "ends_at" to Dates.iso(Date(now + 3600000)),
+                            "registration_deadline" to Dates.iso(Date(now - 120000)),
+                        ),
+                    )
                         .execute()
                 )
                 val attendance =

@@ -30,10 +30,12 @@
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
     </style>
+
     <style name="TextAppearance.Relawanku.Navigation" parent="TextAppearance.Material3.LabelMedium">
         <item name="android:fontFamily">@font/nunito_semibold</item>
         <item name="android:textSize">11sp</item>
     </style>
+
     <style name="TextAppearance.Relawanku.Navigation.Active" parent="TextAppearance.Relawanku.Navigation">
         <item name="android:fontFamily">@font/nunito_bold</item>
     </style>

@@ -71,9 +71,9 @@ class AuthScreens(private val a: MainActivity) {
                 if (password.isBlank()) "Kata sandi wajib diisi"
                 else if (
                     register &&
-                        (password.length < 8 ||
-                            !password.any { it.isLetter() } ||
-                            !password.any { it.isDigit() })
+                    (password.length < 8 ||
+                        !password.any { it.isLetter() } ||
+                        !password.any { it.isDigit() })
                 )
                     "Minimal 8 karakter dengan huruf dan angka"
                 else null

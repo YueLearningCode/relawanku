@@ -8,13 +8,20 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.*
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Space
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.bumptech.glide.Glide
 import com.example.relawanku.MainActivity
 import com.example.relawanku.R
-import com.example.relawanku.data.*
+import com.example.relawanku.data.ActivityDto
+import com.example.relawanku.data.Dates
+import com.example.relawanku.data.ServerAddress
+import com.example.relawanku.data.statusLabel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -170,10 +177,10 @@ class UiKit(val context: Context) {
     ): Pair<TextInputLayout, TextInputEditText> {
         val box =
             TextInputLayout(
-                    context,
-                    null,
-                    com.google.android.material.R.attr.textInputOutlinedStyle,
-                )
+                context,
+                null,
+                com.google.android.material.R.attr.textInputOutlinedStyle,
+            )
                 .apply {
                     hint = label
                     boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
@@ -208,7 +215,7 @@ class UiKit(val context: Context) {
         box.addView(edit)
         if (
             type and InputType.TYPE_TEXT_VARIATION_PASSWORD != 0 &&
-                type and InputType.TYPE_CLASS_NUMBER == 0
+            type and InputType.TYPE_CLASS_NUMBER == 0
         )
             box.endIconMode = TextInputLayout.END_ICON_PASSWORD_TOGGLE
         parent.addView(box)
@@ -304,17 +311,17 @@ class UiKit(val context: Context) {
 
     fun avatar(name: String, size: Int = 48): TextView =
         text(
-                name
-                    .trim()
-                    .split(Regex("\\s+"))
-                    .filter { it.isNotEmpty() }
-                    .take(2)
-                    .joinToString("") { it.take(1) }
-                    .uppercase(java.util.Locale.ROOT),
-                17,
-                700,
-                primary,
-            )
+            name
+                .trim()
+                .split(Regex("\\s+"))
+                .filter { it.isNotEmpty() }
+                .take(2)
+                .joinToString("") { it.take(1) }
+                .uppercase(java.util.Locale.ROOT),
+            17,
+            700,
+            primary,
+        )
             .apply {
                 gravity = Gravity.CENTER
                 background = background(color(R.color.sage), size / 2)

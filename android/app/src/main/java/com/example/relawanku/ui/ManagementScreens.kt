@@ -3,7 +3,6 @@ package com.example.relawanku.ui
 import android.text.InputType
 import android.util.Patterns
 import com.example.relawanku.MainActivity
-import com.example.relawanku.data.*
 
 class ManagementScreens(private val a: MainActivity) {
     private val u = a.ui
@@ -27,11 +26,11 @@ class ManagementScreens(private val a: MainActivity) {
                 val hero = u.panel(area, u.color(com.example.relawanku.R.color.primary_dark), 20)
                 hero.addView(
                     u.text(
-                            "OPERASIONAL KEGIATAN",
-                            10,
-                            700,
-                            u.color(com.example.relawanku.R.color.sage),
-                        )
+                        "OPERASIONAL KEGIATAN",
+                        10,
+                        700,
+                        u.color(com.example.relawanku.R.color.sage),
+                    )
                         .apply { letterSpacing = .12f }
                 )
                 u.gap(hero, 12)
@@ -244,8 +243,8 @@ class ManagementScreens(private val a: MainActivity) {
                 password.first.error =
                     if (
                         value.length < 8 ||
-                            !value.any { it.isLetter() } ||
-                            !value.any { it.isDigit() }
+                        !value.any { it.isLetter() } ||
+                        !value.any { it.isDigit() }
                     )
                         "Minimal 8 karakter dengan huruf dan angka"
                     else null

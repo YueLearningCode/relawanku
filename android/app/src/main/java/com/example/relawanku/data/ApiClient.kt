@@ -4,13 +4,13 @@ import com.example.relawanku.BuildConfig
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 object ServerAddress {
     fun normalize(value: String, allowHttp: Boolean = BuildConfig.DEBUG): String {
@@ -59,10 +59,10 @@ class BearerInterceptor(private val base: String, private val token: () -> Strin
                 request.url.encodedPath.endsWith("/health")
         if (
             !public &&
-                request.url.scheme == origin.scheme &&
-                request.url.host == origin.host &&
-                request.url.port == origin.port &&
-                request.url.encodedPath.startsWith(origin.encodedPath)
+            request.url.scheme == origin.scheme &&
+            request.url.host == origin.host &&
+            request.url.port == origin.port &&
+            request.url.encodedPath.startsWith(origin.encodedPath)
         )
             token()?.let { builder.header("Authorization", "Bearer $it") }
         return chain.proceed(builder.build())

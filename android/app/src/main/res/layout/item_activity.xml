@@ -4,11 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
-    app:strokeWidth="1dp"
     app:strokeColor="@color/outline"
-    app:cardBackgroundColor="@color/surface">
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,22 +23,22 @@
                 android:id="@+id/card_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:contentDescription="@string/activity_image" />
+                android:contentDescription="@string/activity_image"
+                android:scaleType="centerCrop" />
 
             <TextView
                 android:id="@+id/card_category"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="14dp"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
                 android:background="@drawable/bg_sage"
+                android:fontFamily="@font/nunito_bold"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
                 android:textColor="@color/primary_dark"
-                android:textSize="12sp"
-                android:fontFamily="@font/nunito_bold" />
+                android:textSize="12sp" />
         </FrameLayout>
 
         <LinearLayout
@@ -51,28 +51,28 @@
                 android:id="@+id/card_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
                 android:fontFamily="@font/nunito_semibold"
-                android:textColor="@color/primary" />
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/card_title"
-                android:maxLines="2"
-                android:ellipsize="end"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textSize="17sp"
+                android:ellipsize="end"
                 android:fontFamily="@font/nunito_bold"
-                android:textColor="@color/ink" />
+                android:maxLines="2"
+                android:textColor="@color/ink"
+                android:textSize="17sp" />
 
             <TextView
                 android:id="@+id/card_location"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textSize="14sp"
-                android:textColor="@color/muted" />
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/card_capacity"
@@ -82,8 +82,8 @@
                 android:importantForAccessibility="no"
                 app:indicatorColor="@color/primary"
                 app:trackColor="@color/outline"
-                app:trackThickness="3dp"
-                app:trackCornerRadius="2dp" />
+                app:trackCornerRadius="2dp"
+                app:trackThickness="3dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -94,26 +94,26 @@
                 <TextView
                     android:id="@+id/card_quota"
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="@color/muted" />
+                    android:layout_weight="1"
+                    android:textColor="@color/muted"
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/card_status"
-                    android:maxWidth="144dp"
-                    android:maxLines="2"
-                    android:ellipsize="end"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_soft"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:paddingTop="5dp"
-                    android:paddingBottom="5dp"
-                    android:textSize="12sp"
+                    android:ellipsize="end"
                     android:fontFamily="@font/nunito_semibold"
-                    android:textColor="@color/primary_dark" />
+                    android:maxWidth="144dp"
+                    android:maxLines="2"
+                    android:paddingStart="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="5dp"
+                    android:textColor="@color/primary_dark"
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

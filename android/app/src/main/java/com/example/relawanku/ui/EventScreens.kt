@@ -5,7 +5,11 @@ import android.widget.CheckBox
 import android.widget.LinearLayout
 import com.example.relawanku.MainActivity
 import com.example.relawanku.R
-import com.example.relawanku.data.*
+import com.example.relawanku.data.ActivityDto
+import com.example.relawanku.data.ApiUser
+import com.example.relawanku.data.Dates
+import com.example.relawanku.data.RegistrationDto
+import com.example.relawanku.data.statusLabel
 
 class EventScreens(private val a: MainActivity) {
     private val s = a.state
@@ -206,8 +210,8 @@ class EventScreens(private val a: MainActivity) {
                         )
                         if (
                             registration.attendance == null &&
-                                (Dates.parse(event.startsAt)?.time ?: 0) >
-                                    System.currentTimeMillis()
+                            (Dates.parse(event.startsAt)?.time ?: 0) >
+                            System.currentTimeMillis()
                         )
                             u.button(p, "Batalkan pendaftaran", true) {
                                 a.confirm(
@@ -354,17 +358,17 @@ class EventScreens(private val a: MainActivity) {
             else null
         val fields =
             mapOf(
-                    "title" to title.first,
-                    "description" to desc.first,
-                    "category" to category.first,
-                    "location" to location.first,
-                    "quota" to quota.first,
-                    "requirements" to requirements.first,
-                    "starts_at" to start.box,
-                    "ends_at" to end.box,
-                    "registration_deadline" to deadline.box,
-                    "status" to status.box,
-                )
+                "title" to title.first,
+                "description" to desc.first,
+                "category" to category.first,
+                "location" to location.first,
+                "quota" to quota.first,
+                "requirements" to requirements.first,
+                "starts_at" to start.box,
+                "ends_at" to end.box,
+                "registration_deadline" to deadline.box,
+                "status" to status.box,
+            )
                 .toMutableMap()
         coordinator?.let { fields["coordinator_id"] = it.box }
         u.button(p, "Simpan kegiatan") {

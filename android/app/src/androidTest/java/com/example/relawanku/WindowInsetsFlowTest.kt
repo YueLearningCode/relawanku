@@ -11,7 +11,9 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.relawanku.data.*
+import com.example.relawanku.data.ApiClient
+import com.example.relawanku.data.ApiUser
+import com.example.relawanku.data.SessionStore
 import com.example.relawanku.ui.Role
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.TextInputLayout
@@ -20,7 +22,8 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -150,6 +153,7 @@ class WindowInsetsFlowTest {
                                                 "users" to 42,
                                             )
                                     )
+
                                 else ->
                                     mapOf(
                                         "data" to
@@ -254,7 +258,7 @@ class WindowInsetsFlowTest {
                         await(scenario, "Keyboard should close") {
                             !ime(it) &&
                                 it.findViewById<View>(R.id.bottom_navigation).visibility ==
-                                    View.VISIBLE
+                                View.VISIBLE
                         }
                         scenario.onActivity { a ->
                             assertNavigation(a)

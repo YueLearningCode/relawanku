@@ -6,7 +6,9 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
-import android.widget.*
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,16 +16,29 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
-import com.example.relawanku.data.*
-import com.example.relawanku.ui.*
+import com.example.relawanku.data.ApiClient
+import com.example.relawanku.data.ApiFailure
+import com.example.relawanku.data.ApiPage
+import com.example.relawanku.data.ApiService
+import com.example.relawanku.data.LoginData
+import com.example.relawanku.data.SessionStore
+import com.example.relawanku.data.UploadPart
+import com.example.relawanku.ui.AccountScreens
+import com.example.relawanku.ui.AppState
+import com.example.relawanku.ui.AuthScreens
+import com.example.relawanku.ui.EventScreens
+import com.example.relawanku.ui.ManagementScreens
+import com.example.relawanku.ui.Role
+import com.example.relawanku.ui.UiKit
+import com.example.relawanku.ui.VolunteerHome
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
-import java.util.concurrent.Executors
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     lateinit var state: AppState
@@ -173,8 +188,8 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) state.screen = "splash1"
         else if (
             state.user == null &&
-                session.token != null &&
-                state.screen !in listOf("splash1", "splash2", "welcome", "login", "register")
+            session.token != null &&
+            state.screen !in listOf("splash1", "splash2", "welcome", "login", "register")
         )
             state.screen = "restore"
         render()
@@ -510,7 +525,7 @@ class MainActivity : AppCompatActivity() {
         host.removeAllViews()
         if (
             state.user == null &&
-                state.screen in listOf("main", "detail", "form", "history", "userform")
+            state.screen in listOf("main", "detail", "form", "history", "userform")
         )
             state.screen = if (session.token != null) "restore" else "login"
         navigation.visibility =
@@ -629,22 +644,22 @@ class MainActivity : AppCompatActivity() {
         ui.gap(panel, 24)
         panel.addView(
             ui.text(
-                    if (first) "Relawanku" else "Langkah kecil,\ndampak berarti.",
-                    if (first) 36 else 28,
-                    700,
-                    ui.color(if (first) R.color.surface else R.color.ink),
-                )
+                if (first) "Relawanku" else "Langkah kecil,\ndampak berarti.",
+                if (first) 36 else 28,
+                700,
+                ui.color(if (first) R.color.surface else R.color.ink),
+            )
                 .apply { gravity = Gravity.CENTER }
         )
         ui.gap(panel, 14)
         panel.addView(
             ui.text(
-                    if (first) "Temukan kegiatan. Ambil peran."
-                    else "Bersama, kita hadirkan perubahan.",
-                    16,
-                    400,
-                    ui.color(if (first) R.color.sage else R.color.muted),
-                )
+                if (first) "Temukan kegiatan. Ambil peran."
+                else "Bersama, kita hadirkan perubahan.",
+                16,
+                400,
+                ui.color(if (first) R.color.sage else R.color.muted),
+            )
                 .apply { gravity = Gravity.CENTER }
         )
         logo.alpha = 0f

@@ -23,8 +23,10 @@ class SessionStore(context: Context) {
                 ?: runCatching { ServerAddress.normalize(BuildConfig.API_BASE_URL) }
                     .getOrDefault("https://example.invalid/api/")
 
-    @Volatile private var loaded = false
-    @Volatile private var cached: String? = null
+    @Volatile
+    private var loaded = false
+    @Volatile
+    private var cached: String? = null
     val token: String?
         get() {
             if (!loaded) {
@@ -52,9 +54,9 @@ class SessionStore(context: Context) {
             .apply {
                 init(
                     KeyGenParameterSpec.Builder(
-                            "relawanku_session_aes",
-                            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-                        )
+                        "relawanku_session_aes",
+                        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                    )
                         .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                         .build()

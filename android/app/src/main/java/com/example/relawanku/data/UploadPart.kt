@@ -2,10 +2,10 @@ package com.example.relawanku.data
 
 import android.content.Context
 import android.net.Uri
-import java.io.File
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 
 class UploadPart(val file: File, val part: MultipartBody.Part) {
     companion object {

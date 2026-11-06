@@ -4,8 +4,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:orientation="vertical">
 
     <FrameLayout
         android:id="@+id/screen_host"
@@ -23,12 +23,12 @@
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        android:minHeight="64dp"
         android:background="@color/surface"
-        app:itemIconSize="22dp"
-        app:itemPaddingTop="8dp"
-        app:itemPaddingBottom="6dp"
+        android:minHeight="64dp"
         app:itemHorizontalTranslationEnabled="false"
+        app:itemIconSize="22dp"
+        app:itemPaddingBottom="6dp"
+        app:itemPaddingTop="8dp"
         app:itemTextAppearanceActive="@style/TextAppearance.Relawanku.Navigation.Active"
         app:itemTextAppearanceInactive="@style/TextAppearance.Relawanku.Navigation"
         app:labelVisibilityMode="labeled" />

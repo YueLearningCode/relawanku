@@ -3,7 +3,7 @@ package com.example.relawanku.ui
 import android.text.InputType
 import android.util.Patterns
 import com.example.relawanku.MainActivity
-import com.example.relawanku.data.*
+import com.example.relawanku.data.Dates
 
 class AccountScreens(private val a: MainActivity) {
     private val u = a.ui
@@ -28,7 +28,8 @@ class AccountScreens(private val a: MainActivity) {
             words.addView(u.text(user.email, 13, 400, u.muted))
             identity.addView(
                 words,
-                android.widget.LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = u.dp(14) },
+                android.widget.LinearLayout.LayoutParams(0, -2, 1f)
+                    .apply { marginStart = u.dp(14) },
             )
             summary.addView(identity)
             u.gap(summary, 12)
