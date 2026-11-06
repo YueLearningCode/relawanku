@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
                 override fun handleOnBackPressed() {
                     when {
                         state.screen == "register" -> navigate("login")
+                        state.screen == "login" -> navigate("welcome")
                         state.screen in listOf("detail", "form", "history", "userform") ->
                             navigate("main")
 
@@ -226,6 +227,8 @@ class MainActivity : AppCompatActivity() {
             "splash1",
             "splash2" -> splash()
 
+            "welcome" -> welcome()
+
             "login",
             "register" -> AuthScreens(this).render()
 
@@ -249,6 +252,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun welcome() {
+        val view = layoutInflater.inflate(R.layout.screen_welcome, host, false)
+        host.addView(view)
+        view.findViewById<View>(R.id.welcome_start_button).setOnClickListener { navigate("login") }
+        view.findViewById<View>(R.id.welcome_register_button).setOnClickListener {
+            navigate("register")
+        }
+    }
+
     private fun splash() {
         val first = state.screen == "splash1"
         val panel =
@@ -269,22 +281,22 @@ class MainActivity : AppCompatActivity() {
         ui.gap(panel, 24)
         panel.addView(
             ui.text(
-                if (first) "Relawanku" else "Langkah kecil,\ndampak berarti.",
-                if (first) 36 else 28,
-                700,
-                ui.color(if (first) R.color.surface else R.color.ink),
-            )
+                    if (first) "Relawanku" else "Langkah kecil,\ndampak berarti.",
+                    if (first) 36 else 28,
+                    700,
+                    ui.color(if (first) R.color.surface else R.color.ink),
+                )
                 .apply { gravity = Gravity.CENTER }
         )
         ui.gap(panel, 14)
         panel.addView(
             ui.text(
-                if (first) "Temukan kegiatan. Ambil peran."
-                else "Bersama, kita hadirkan perubahan.",
-                16,
-                400,
-                ui.color(if (first) R.color.sage else R.color.muted),
-            )
+                    if (first) "Temukan kegiatan. Ambil peran."
+                    else "Bersama, kita hadirkan perubahan.",
+                    16,
+                    400,
+                    ui.color(if (first) R.color.sage else R.color.muted),
+                )
                 .apply { gravity = Gravity.CENTER }
         )
         logo.alpha = 0f
@@ -301,7 +313,7 @@ class MainActivity : AppCompatActivity() {
         handler.postDelayed(
             {
                 if (!isFinishing) {
-                    state.screen = if (first) "splash2" else "login"
+                    state.screen = if (first) "splash2" else "welcome"
                     render()
                 }
             },

@@ -71,6 +71,33 @@ class UiFlowTest {
     }
 
     @Test
+    fun welcome_xml_routes_to_login_and_registration() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            var welcomeShown = false
+            repeat(30) {
+                if (!welcomeShown) {
+                    scenario.onActivity { a -> welcomeShown = a.state.screen == "welcome" }
+                    if (!welcomeShown) Thread.sleep(150)
+                }
+            }
+            assertTrue("Splash screens should lead to Welcome", welcomeShown)
+            scenario.onActivity { a ->
+                assertNotNull(a.findViewById<View>(R.id.welcome_screen))
+                assertEquals(
+                    a.getString(R.string.welcome_title),
+                    a.findViewById<TextView>(R.id.welcome_title).text.toString(),
+                )
+                a.findViewById<View>(R.id.welcome_start_button).performClick()
+                assertEquals("login", a.state.screen)
+                a.onBackPressedDispatcher.onBackPressed()
+                assertEquals("welcome", a.state.screen)
+                a.findViewById<View>(R.id.welcome_register_button).performClick()
+                assertEquals("register", a.state.screen)
+            }
+        }
+    }
+
+    @Test
     fun volunteer_can_search_join_and_complete_attendance() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { a ->

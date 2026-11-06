@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_brand">relawanku</string>
+    <string name="welcome_title">Langkah kecil,\ndampak berarti.</string>
+    <string name="welcome_description">Temukan kegiatan sosial yang dekat dengan hatimu. Ambil peran, bertemu orang-orang yang peduli, dan hadirkan perubahan bersama.</string>
+    <string name="welcome_photo_description">Hutan hijau sebagai ilustrasi kepedulian terhadap lingkungan</string>
+    <string name="welcome_photo_badge">BERSAMA KITA BISA</string>
+    <string name="welcome_community">Satu komunitas, banyak cara berbagi kebaikan.</string>
+    <string name="welcome_start">Mulai langkah baikmu</string>
+    <string name="welcome_register">Buat akun relawan</string>
+    <string name="welcome_footer">Temukan kegiatan. Ambil peran. Hadirkan perubahan.</string>
+</resources>

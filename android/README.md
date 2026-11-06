@@ -8,7 +8,7 @@ UI interaktif memakai data contoh lokal dalam PreviewState. Belum ada pemanggila
 
 Layar tersedia:
 
-- Dua splashscreen animasi, masuk, dan daftar dengan validasi form.
+- Dua splashscreen animasi, Welcome dari XML, masuk, dan daftar dengan validasi form.
 - Relawan: beranda, jelajah dengan pencarian/filter, detail kegiatan, daftar/batal, Kegiatanku, tugas, absensi, dokumentasi, profil, dan riwayat.
 - Koordinator: dashboard, daftar kegiatan, tambah/edit, arsip individu/massal dengan konfirmasi, peserta, tugas, sesi absensi, dan dokumentasi.
 - Admin: dashboard, seluruh kegiatan, cari/filter pengguna, tambah/edit pengguna, penggantian peran, dan aktif/nonaktif akun contoh.
@@ -19,7 +19,7 @@ Layar tersedia:
 1. Android Studio > Open > pilih folder android ini. Tunggu Gradle Sync selesai.
 2. Pilih emulator atau HP yang sudah mengizinkan USB debugging.
 3. Jalankan konfigurasi app.
-4. Tunggu dua layar pembuka. Pada halaman masuk, gulir ke bagian Coba tampilan aplikasi.
+4. Tunggu dua layar pembuka, lalu pada Welcome ketuk Mulai langkah baikmu. Pada halaman masuk, gulir ke bagian Coba tampilan aplikasi.
 5. Pilih Relawan, Koordinator, atau Admin, lalu ketuk Coba dengan data contoh. Server Laravel tidak diperlukan untuk tahap UI.
 6. Peran dapat diganti dari Profil > Ganti peran pratinjau.
 
@@ -74,3 +74,9 @@ Foto ilustrasi dari Unsplash disertakan lokal agar UI tetap tampil tanpa jaringa
 Foto merupakan ilustrasi kategori, bukan dokumentasi kegiatan sebenarnya. Ikon garis berbasis VectorDrawable dibuat untuk UI ini.
 
 Jangan commit local.properties, token, password, signing key, atau hasil build. Commit source Kotlin/XML, konfigurasi Gradle, dan Gradle wrapper.
+
+## Halaman Welcome dengan XML
+
+Halaman Welcome tersusun sepenuhnya di app/src/main/res/layout/screen_welcome.xml. Buka file tersebut lalu pilih Split atau Design di Android Studio untuk melihat dan mengubah tata letaknya. Teks berada di values/strings_welcome.xml; warna, Nunito, ikon dan foto memakai resource yang sudah tersedia. Preview menampilkan konten asli karena teks dan gambar ditentukan langsung di XML.
+
+Alur awal: splash pertama → splash kedua → Welcome → Masuk atau Daftar. Kotlin pada fungsi welcome di MainActivity hanya memuat layout dan memasang aksi tombol. Layar lainnya tetap memakai pendekatan Kotlin sebelumnya.

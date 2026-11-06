@@ -73,3 +73,11 @@ Petunjuk lengkap dan cara mengulang tes konkurensi ada di [docs/API.md](docs/API
 - [ ] Verifikasi pada HP fisik, Android API 24, dan skenario jaringan nyata.
 
 UI ini menggunakan PreviewState lokal, bukan autentikasi atau otorisasi produksi. Pemilih peran hanya untuk pratinjau. Data demo berada dalam ViewModel dan bertahan selama proses aplikasi, termasuk recreate Activity. Draft formulir belum dipertahankan saat rotasi. Akses foto lokal belum berarti unggah ke server.
+
+## Welcome XML pada 4 November 2026
+
+- [x] Halaman Welcome dibuat sepenuhnya di android/app/src/main/res/layout/screen_welcome.xml; teks pada values/strings_welcome.xml. Warna, Nunito, foto, dan ikon memakai resource yang sudah tersedia.
+- [x] MainActivity hanya memuat layout Welcome dan memasang listener tombol. Layar lain tetap memakai renderer Kotlin sebelumnya.
+- [x] Alur dua splashscreen -> Welcome -> Masuk/Daftar terhubung. Tombol kembali dari Masuk menuju Welcome.
+- [x] assembleDebug dan lintDebug lulus; tes perangkat khusus welcome_xml_routes_to_login_and_registration lulus pada emulator API 37, termasuk pemeriksaan konten XML dan dua tujuan tombol.
+- [x] Screenshot Welcome pada emulator diperiksa; APK pratinjau diperbarui. Integrasi API tetap pekerjaan berikutnya.
