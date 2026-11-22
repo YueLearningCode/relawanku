@@ -10,7 +10,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.relawanku.data.ApiUser
 import com.example.relawanku.data.SessionStore
 import com.google.android.material.textfield.TextInputLayout
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
