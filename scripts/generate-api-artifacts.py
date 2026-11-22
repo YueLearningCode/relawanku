@@ -153,9 +153,9 @@ def events(kind, lines):
     return {"listen": kind, "script": {"type": "text/javascript", "exec": lines}}
 
 
-def request(entry, name=None, token=None, capture=None, before=None, body=None):
+def request(entry, name=None, token=None, capture=None, before=None, body=None, expected=None, checks=None, variables=None):
     path = entry["path"]
-    for key, variable in parameter_names.items():
+    for key, variable in (parameter_names | (variables or {})).items():
         path = path.replace("{" + key + "}", "{{" + variable + "}}")
     req = {"method": entry["method"], "header": [{"key": "Accept", "value": "application/json"}], "url": "{{base_url}}" + path, "description": "Akses: " + entry["access"] + ". " + ("Pilih berkas image di Body > form-data, lalu jalankan manual." if entry["multipart"] else "")}
     if entry["access"] == "publik":
@@ -173,12 +173,38 @@ def request(entry, name=None, token=None, capture=None, before=None, body=None):
             for variable in ["activity_id", "task_id", "volunteer_id", "coordinator_id", "user_id"]:
                 raw = raw.replace('"{{' + variable + '}}"', '{{' + variable + '}}')
             req["body"] = {"mode": "raw", "raw": raw, "options": {"raw": {"language": "json"}}}
-    lines = [f'pm.test("HTTP {entry["status"]}", () => pm.response.to.have.status({entry["status"]}));']
+    expected = entry["status"] if expected is None else expected
+    lines = [
+        f'pm.test("HTTP {expected}", () => pm.response.to.have.status({expected}));',
+        'pm.test("Respons berupa JSON", () => pm.response.to.be.json);',
+        f'if (pm.response.code !== {expected}) {{',
+        '  pm.execution.setNextRequest(null);',
+        '  throw new Error("Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.");',
+        '}',
+    ]
+    if expected < 300 and entry["response"]:
+        if entry["response"].endswith("[]"):
+            lines += [
+                'pm.test("Daftar dan pagination tersedia", () => {',
+                '  const result = pm.response.json();',
+                '  pm.expect(result.data).to.be.an("array");',
+                '  pm.expect(result.current_page).to.be.a("number");',
+                '  pm.expect(result.total).to.be.a("number");',
+                '});',
+            ]
+        elif entry["response"] != "Health":
+            lines.append('pm.test("Objek data tersedia", () => pm.expect(pm.response.json().data).to.be.an("object"));')
     if capture:
-        lines += ['if (pm.response.code >= 200 && pm.response.code < 300) {', '  const data = pm.response.json().data;', *[f'  pm.environment.set("{key}", data.{value});' for key, value in capture.items()], '}']
+        lines += ['const captured = pm.response.json().data;', *[f'pm.environment.set("{key}", captured.{value});' for key, value in capture.items()]]
+    if checks:
+        lines += checks
+    if entry["path"] == "/auth/logout":
+        lines.append(f'pm.environment.unset("{token}");')
     item = {"name": name or entry["name"], "request": req, "response": [], "event": [events("test", lines)]}
-    if before:
-        item["event"].append(events("prerequest", before))
+    prepare = [f'pm.environment.unset("{key}");' for key in (capture or {})]
+    prepare += before or []
+    if prepare:
+        item["event"].append(events("prerequest", prepare))
     return item
 
 
@@ -197,26 +223,79 @@ ongoing = [
     'pm.environment.set("ongoing_end", new Date(Date.now() + 3600000).toISOString());',
     'pm.environment.set("ongoing_deadline", new Date(Date.now() - 120000).toISOString());',
 ]
-workflow = [request(find("GET", "/health"))]
-for key, label in [("admin", "Admin"), ("coordinator", "Koordinator"), ("volunteer", "Relawan")]:
-    workflow.append(request(find("POST", "/auth/login"), name="Login " + label, body={"email": "{{" + key + "_email}}", "password": "{{demo_password}}", "device_name": "Postman"}, capture={key + "_token": "token", key + "_id": "user.id"}))
+
+
+def login(key, label, role):
+    return request(
+        find("POST", "/auth/login"), name="Login " + label,
+        body={"email": "{{" + key + "_email}}", "password": "{{demo_password}}", "device_name": "Postman Demo"},
+        capture={key + "_token": "token", key + "_id": "user.id"},
+        checks=[
+            'pm.test("Peran dan token sesuai", () => {',
+            f'  pm.expect(pm.response.json().data.user.role).to.eql("{role}");',
+            '  pm.expect(pm.response.json().data.token).to.be.a("string").and.not.empty;',
+            '  pm.expect(pm.response.json().data.token_type).to.eql("Bearer");',
+            '});',
+        ],
+    )
+
+
+def logins():
+    return [login(key, label, role) for key, label, role in [
+        ("admin", "Admin", "admin"), ("coordinator", "Koordinator", "koordinator"), ("volunteer", "Relawan", "relawan"),
+    ]]
+
+
+def existing(method, path, name=None, upcoming=False, **kwargs):
+    return request(find(method, path), name=name, variables={"activity": "existing_upcoming_activity_id" if upcoming else "existing_activity_id"}, **kwargs)
+
+
+current = [request(find("GET", "/health")), *logins()]
+for token, label in [("admin_token", "Admin"), ("coordinator_token", "Koordinator"), ("volunteer_token", "Relawan")]:
+    current += [request(find("GET", "/auth/me"), name="Profil " + label, token=token), request(find("GET", "/dashboard"), name="Dashboard " + label, token=token)]
+current += [
+    request(find("GET", "/activities")),
+    existing("GET", "/activities/{activity}", name="Detail data saat ini - demo lagi"),
+    existing("GET", "/activities/{activity}", name="Detail kegiatan mendatang - Bersih Selokan", upcoming=True),
+    existing("GET", "/activities/{activity}/registrations"),
+    existing("GET", "/activities/{activity}/tasks", token="coordinator_token"),
+    existing("GET", "/activities/{activity}/documentations", token="coordinator_token"),
+    existing("GET", "/activities/{activity}/attendances"),
+    request(find("GET", "/my/registrations")), request(find("GET", "/history")),
+]
+
+workflow = [request(find("GET", "/health")), *logins()]
 workflow += [
     request(find("POST", "/activities"), before=future, capture={"activity_id": "id"}),
     request(find("GET", "/activities")), request(find("GET", "/activities/{activity}")),
     request(find("POST", "/activities/{activity}/registrations"), capture={"registration_id": "id"}),
+    request(find("POST", "/activities/{activity}/registrations"), name="Uji 409 - pendaftaran ganda ditolak", expected=409),
     request(find("GET", "/activities/{activity}/registrations")), request(find("GET", "/my/registrations")),
     request(find("POST", "/activities/{activity}/tasks"), capture={"task_id": "id"}),
     request(find("GET", "/activities/{activity}/tasks")),
+    request(find("GET", "/activities/{activity}/tasks/{task}")),
+    request(find("PATCH", "/activities/{activity}/tasks/{task}")),
     request(find("PATCH", "/activities/{activity}/tasks/{task}/status")),
+    request(find("GET", "/users"), name="Uji 403 - relawan tidak dapat mengelola akun", token="volunteer_token", expected=403),
     request(find("PATCH", "/activities/{activity}"), name="Simulasikan kegiatan sedang berlangsung", before=ongoing, body={"starts_at": "{{ongoing_start}}", "ends_at": "{{ongoing_end}}", "registration_deadline": "{{ongoing_deadline}}", "status": "closed"}),
     request(find("POST", "/activities/{activity}/attendance-sessions"), capture={"attendance_session_id": "session.id", "attendance_code": "code"}),
     request(find("POST", "/activities/{activity}/attendances")),
+    request(find("POST", "/activities/{activity}/attendances"), name="Uji 409 - absensi ganda ditolak", expected=409),
     request(find("GET", "/activities/{activity}/attendances")),
+    request(find("GET", "/activities/{activity}"), name="Detail kegiatan memuat pendaftaran dan absensi saya", checks=[
+        'pm.test("Pendaftaran dan absensi milik relawan tersedia", () => {',
+        '  const registration = pm.response.json().data.my_registration;',
+        '  pm.expect(registration.id).to.eql(Number(pm.environment.get("registration_id")));',
+        '  pm.expect(registration.attendance).to.be.an("object");',
+        '  pm.expect(registration.attendance.checked_in_at).to.be.a("string");',
+        '});',
+    ]),
     request(find("GET", "/dashboard")), request(find("GET", "/history")),
     request(find("GET", "/activities/{activity}/history")),
     request(find("DELETE", "/activities/{activity}/attendance-sessions/{attendanceSession}")),
     request(find("DELETE", "/activities/{activity}/tasks/{task}")),
     request(find("DELETE", "/activities/{activity}")),
+    request(find("GET", "/activities/{activity}"), name="Uji 404 - kegiatan uji sudah diarsipkan", expected=404),
 ]
 
 reference = []
@@ -225,26 +304,41 @@ for group in dict.fromkeys(e["group"] for e in ENDPOINTS):
     for entry in ENDPOINTS:
         if entry["group"] != group:
             continue
+        if entry["path"] == "/auth/login":
+            entries += logins()
+            continue
         capture = None
         if entry["method"] == "POST" and entry["path"] in ["/activities", "/activities/{activity}/tasks", "/activities/{activity}/registrations", "/activities/{activity}/documentations", "/users"]:
             variable = {"/activities": "activity_id", "/activities/{activity}/tasks": "task_id", "/activities/{activity}/registrations": "registration_id", "/activities/{activity}/documentations": "documentation_id", "/users": "user_id"}[entry["path"]]
             capture = {variable: "id"}
-        elif entry["path"] == "/auth/login":
-            capture = {"coordinator_token": "token", "coordinator_id": "user.id"}
         elif entry["method"] == "POST" and entry["path"].endswith("/attendance-sessions"):
             capture = {"attendance_session_id": "session.id", "attendance_code": "code"}
         entries.append(request(entry, capture=capture, before=future if entry["method"] == "POST" and entry["path"] == "/activities" else None))
     reference.append({"name": group, "item": entries})
 
-collection = {"info": {"name": "Relawanku API", "description": "Import environment lokal dan jalankan DemoSeeder. Jalankan folder 01 Alur utama sebagai smoke test. Folder 02 adalah referensi endpoint untuk dijalankan satu per satu; hapus massal dan pembatalan memiliki prasyarat berbeda. Jangan menjalankan seluruh koleksi sekaligus. Token tiap peran dan ID hasil create tersimpan otomatis. Unggahan foto membutuhkan pemilihan file manual. Lihat docs/API.md.", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"}, "item": [{"name": "01 Alur utama - jalankan folder ini", "description": "Login tiga peran, CRUD kegiatan dan tugas, pendaftaran, sesi absensi, kehadiran, riwayat, dan arsip data uji. Dapat dijalankan ulang; membuat kegiatan baru setiap run.", "item": workflow}, {"name": "02 Referensi endpoint - jalankan satu per satu", "item": reference}]}
+collection = {"info": {"name": "Relawanku API", "description": "Import environment Relawanku - Local. Folder 00 membaca data lokal yang sudah ada (ID existing_activity_id dan existing_upcoming_activity_id). Folder 01 membuat kegiatan/tugas baru untuk demo CRUD, pendaftaran, dan absensi, lalu mengarsipkannya; dapat dijalankan ulang. Folder 02 adalah referensi endpoint untuk dijalankan satu per satu. Jalankan satu folder melalui Collection Runner, bukan seluruh koleksi. Token tiap peran, ID hasil create, tanggal, dan kode absensi tersimpan otomatis. HTTP 403/404/409 pada request bernama Uji adalah hasil yang diharapkan. Lihat postman/README.md.", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"}, "item": [
+    {"name": "00 Data saat ini - baca saja", "description": "Login tiga peran, baca profil/dashboard, kegiatan ID existing_activity_id dan existing_upcoming_activity_id, peserta, tugas, dokumentasi, kehadiran, dan riwayat. Login membuat token; request lainnya hanya membaca data. Jika ID berubah, sesuaikan environment.", "item": current},
+    {"name": "01 Alur utama - jalankan folder ini", "description": "Login tiga peran, CRUD kegiatan dan tugas baru, pendaftaran, sesi absensi, kehadiran, riwayat, dan arsip data uji. Tanggal otomatis relatif terhadap waktu run. Memeriksa larangan akses relawan, duplikasi pendaftaran/absensi, dan detail my_registration. Berhenti jika status HTTP tidak sesuai. Dapat dijalankan ulang.", "item": workflow},
+    {"name": "02 Referensi endpoint - jalankan satu per satu", "description": "Katalog endpoint lengkap. Login tiap peran tersedia di Autentikasi. Isi activity_id/task_id/dll dengan data yang ingin diuji; kegiatan dari folder 01 sudah diarsipkan setelah alur selesai. Unggahan foto memerlukan pilihan file pada Body > form-data > image. Jangan Run seluruh folder ini.", "item": reference},
+]}
 values = {
-    "base_url": "http://127.0.0.1:8000/api", "admin_email": "admin@relawanku.test", "coordinator_email": "koordinator@relawanku.test", "volunteer_email": "relawan@relawanku.test", "demo_password": "RelawanDemo123!",
+    "base_url": "http://127.0.0.1:8000/api", "admin_email": "admin@gmail.com", "coordinator_email": "koordinator@gmail.com", "volunteer_email": "relawan@gmail.com", "demo_password": "RelawanDemo123!",
+    "existing_activity_id": "", "existing_upcoming_activity_id": "",
     **{key: "" for key in ["admin_token", "coordinator_token", "volunteer_token", "admin_id", "coordinator_id", "volunteer_id", "activity_id", "task_id", "registration_id", "documentation_id", "attendance_session_id", "attendance_code", "user_id", "starts_at", "ends_at", "registration_deadline", "ongoing_start", "ongoing_end", "ongoing_deadline"]},
 }
+# Preserve the local connection/accounts and selected read-only data, never exported tokens.
+environment_path = ROOT / "postman/Relawanku.local.postman_environment.json"
+if environment_path.exists():
+    existing_values = {item["key"]: item.get("value", "") for item in json.loads(environment_path.read_text(encoding="utf-8-sig"))["values"]}
+    for key in ["base_url", "admin_email", "coordinator_email", "volunteer_email", "demo_password", "existing_activity_id", "existing_upcoming_activity_id"]:
+        if key in existing_values:
+            values[key] = existing_values[key]
 environment = {"name": "Relawanku - Local", "values": [{"key": key, "value": value, "enabled": True, "type": "secret" if "token" in key or "password" in key or key == "attendance_code" else "default"} for key, value in values.items()], "_postman_variable_scope": "environment"}
 
 for relative, data in [("docs/openapi.json", spec), ("postman/Relawanku.postman_collection.json", collection), ("postman/Relawanku.local.postman_environment.json", environment)]:
     destination = ROOT / relative
+    if destination.exists() and json.loads(destination.read_text(encoding="utf-8-sig")) == data:
+        continue
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"Generated OpenAPI ({len(ENDPOINTS)} operations + PUT aliases), Postman collection and environment.")

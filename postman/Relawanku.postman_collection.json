@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "Relawanku API",
-    "description": "Import environment lokal dan jalankan DemoSeeder. Jalankan folder 01 Alur utama sebagai smoke test. Folder 02 adalah referensi endpoint untuk dijalankan satu per satu; hapus massal dan pembatalan memiliki prasyarat berbeda. Jangan menjalankan seluruh koleksi sekaligus. Token tiap peran dan ID hasil create tersimpan otomatis. Unggahan foto membutuhkan pemilihan file manual. Lihat docs/API.md.",
+    "description": "Import environment Relawanku - Local. Folder 00 membaca data lokal yang sudah ada (ID existing_activity_id dan existing_upcoming_activity_id). Folder 01 membuat kegiatan/tugas baru untuk demo CRUD, pendaftaran, dan absensi, lalu mengarsipkannya; dapat dijalankan ulang. Folder 02 adalah referensi endpoint untuk dijalankan satu per satu. Jalankan satu folder melalui Collection Runner, bukan seluruh koleksi. Token tiap peran, ID hasil create, tanggal, dan kode absensi tersimpan otomatis. HTTP 403/404/409 pada request bernama Uji adalah hasil yang diharapkan. Lihat postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "01 Alur utama - jalankan folder ini",
-      "description": "Login tiga peran, CRUD kegiatan dan tugas, pendaftaran, sesi absensi, kehadiran, riwayat, dan arsip data uji. Dapat dijalankan ulang; membuat kegiatan baru setiap run.",
+      "name": "00 Data saat ini - baca saja",
+      "description": "Login tiga peran, baca profil/dashboard, kegiatan ID existing_activity_id dan existing_upcoming_activity_id, peserta, tugas, dokumentasi, kehadiran, dan riwayat. Login membuat token; request lainnya hanya membaca data. Jika ID berubah, sesuaikan environment.",
       "item": [
         {
           "name": "Status API",
@@ -32,7 +32,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -59,7 +64,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman\"\n}",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -75,11 +80,30 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"admin_token\", data.token);",
-                  "  pm.environment.set(\"admin_id\", data.user.id);",
-                  "}"
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"admin_token\", captured.token);",
+                  "pm.environment.set(\"admin_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"admin\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"admin_token\");",
+                  "pm.environment.unset(\"admin_id\");"
                 ]
               }
             }
@@ -106,7 +130,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{coordinator_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman\"\n}",
+              "raw": "{\n  \"email\": \"{{coordinator_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -122,11 +146,30 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"coordinator_token\", data.token);",
-                  "  pm.environment.set(\"coordinator_id\", data.user.id);",
-                  "}"
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"coordinator_token\", captured.token);",
+                  "pm.environment.set(\"coordinator_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"koordinator\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"coordinator_token\");",
+                  "pm.environment.unset(\"coordinator_id\");"
                 ]
               }
             }
@@ -153,7 +196,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{volunteer_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman\"\n}",
+              "raw": "{\n  \"email\": \"{{volunteer_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -169,11 +212,933 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"volunteer_token\", data.token);",
-                  "  pm.environment.set(\"volunteer_id\", data.user.id);",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"volunteer_token\", captured.token);",
+                  "pm.environment.set(\"volunteer_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"relawan\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"volunteer_token\");",
+                  "pm.environment.unset(\"volunteer_id\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profil Admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/me",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard Admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/dashboard",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profil Koordinator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/me",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard Koordinator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/dashboard",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profil Relawan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/me",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard Relawan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/dashboard",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar dan cari kegiatan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detail data saat ini - demo lagi",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_activity_id}}",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detail kegiatan mendatang - Bersih Selokan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_upcoming_activity_id}}",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar peserta kegiatan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_activity_id}}/registrations",
+            "description": "Akses: koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar tugas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_activity_id}}/tasks",
+            "description": "Akses: peserta/koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar dokumentasi",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_activity_id}}/documentations",
+            "description": "Akses: peserta/koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar kehadiran peserta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{existing_activity_id}}/attendances",
+            "description": "Akses: koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Riwayat keikutsertaan saya",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/my/registrations",
+            "description": "Akses: relawan. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Riwayat aksi saya",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/history",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 Alur utama - jalankan folder ini",
+      "description": "Login tiga peran, CRUD kegiatan dan tugas baru, pendaftaran, sesi absensi, kehadiran, riwayat, dan arsip data uji. Tanggal otomatis relatif terhadap waktu run. Memeriksa larangan akses relawan, duplikasi pendaftaran/absensi, dan detail my_registration. Berhenti jika status HTTP tidak sesuai. Dapat dijalankan ulang.",
+      "item": [
+        {
+          "name": "Status API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/health",
+            "description": "Akses: publik. ",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
                   "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login",
+            "description": "Akses: publik. ",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"admin_token\", captured.token);",
+                  "pm.environment.set(\"admin_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"admin\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"admin_token\");",
+                  "pm.environment.unset(\"admin_id\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Koordinator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login",
+            "description": "Akses: publik. ",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{coordinator_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"coordinator_token\", captured.token);",
+                  "pm.environment.set(\"coordinator_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"koordinator\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"coordinator_token\");",
+                  "pm.environment.unset(\"coordinator_id\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Relawan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login",
+            "description": "Akses: publik. ",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{volunteer_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"volunteer_token\", captured.token);",
+                  "pm.environment.set(\"volunteer_id\", captured.user.id);",
+                  "pm.test(\"Peran dan token sesuai\", () => {",
+                  "  pm.expect(pm.response.json().data.user.role).to.eql(\"relawan\");",
+                  "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"volunteer_token\");",
+                  "pm.environment.unset(\"volunteer_id\");"
                 ]
               }
             }
@@ -223,10 +1188,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"activity_id\", data.id);",
-                  "}"
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 201) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"activity_id\", captured.id);"
                 ]
               }
             },
@@ -235,6 +1204,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "pm.environment.unset(\"activity_id\");",
                   "const start = new Date(Date.now() + 48 * 3600000);",
                   "pm.environment.set(\"starts_at\", start.toISOString());",
                   "pm.environment.set(\"ends_at\", new Date(start.getTime() + 3 * 3600000).toISOString());",
@@ -274,7 +1244,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
                 ]
               }
             }
@@ -310,7 +1291,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                 ]
               }
             }
@@ -347,9 +1334,63 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"registration_id\", data.id);",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 201) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"registration_id\", captured.id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"registration_id\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Uji 409 - pendaftaran ganda ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}/registrations",
+            "description": "Akses: relawan. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 409) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
                   "}"
                 ]
               }
@@ -386,7 +1427,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
                 ]
               }
             }
@@ -422,7 +1474,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
                 ]
               }
             }
@@ -472,10 +1535,23 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"task_id\", data.id);",
-                  "}"
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 201) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"task_id\", captured.id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"task_id\");"
                 ]
               }
             }
@@ -511,7 +1587,115 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detail tugas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}/tasks/{{task_id}}",
+            "description": "Akses: penerima tugas/koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Perbarui tugas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}/tasks/{{task_id}}",
+            "description": "Akses: koordinator/admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{coordinator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Siapkan kantong sampah dan sarung tangan.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                 ]
               }
             }
@@ -560,7 +1744,54 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Uji 403 - relawan tidak dapat mengelola akun",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/users",
+            "description": "Akses: admin. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 403) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -609,7 +1840,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                 ]
               }
             },
@@ -670,11 +1907,25 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  const data = pm.response.json().data;",
-                  "  pm.environment.set(\"attendance_session_id\", data.session.id);",
-                  "  pm.environment.set(\"attendance_code\", data.code);",
-                  "}"
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 201) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "const captured = pm.response.json().data;",
+                  "pm.environment.set(\"attendance_session_id\", captured.session.id);",
+                  "pm.environment.set(\"attendance_code\", captured.code);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset(\"attendance_session_id\");",
+                  "pm.environment.unset(\"attendance_code\");"
                 ]
               }
             }
@@ -723,7 +1974,67 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 201) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Uji 409 - absensi ganda ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}/attendances",
+            "description": "Akses: relawan. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{attendance_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 409) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -759,7 +2070,66 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detail kegiatan memuat pendaftaran dan absensi saya",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "pm.test(\"Pendaftaran dan absensi milik relawan tersedia\", () => {",
+                  "  const registration = pm.response.json().data.my_registration;",
+                  "  pm.expect(registration.id).to.eql(Number(pm.environment.get(\"registration_id\")));",
+                  "  pm.expect(registration.attendance).to.be.an(\"object\");",
+                  "  pm.expect(registration.attendance.checked_in_at).to.be.a(\"string\");",
+                  "});"
                 ]
               }
             }
@@ -795,7 +2165,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                 ]
               }
             }
@@ -831,7 +2207,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
                 ]
               }
             }
@@ -867,7 +2254,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}",
+                  "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                  "  const result = pm.response.json();",
+                  "  pm.expect(result.data).to.be.an(\"array\");",
+                  "  pm.expect(result.current_page).to.be.a(\"number\");",
+                  "  pm.expect(result.total).to.be.a(\"number\");",
+                  "});"
                 ]
               }
             }
@@ -903,7 +2301,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -939,7 +2342,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -975,7 +2383,53 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Uji 404 - kegiatan uji sudah diarsipkan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/activities/{{activity_id}}",
+            "description": "Akses: semua. ",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{volunteer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code !== 404) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                  "}"
                 ]
               }
             }
@@ -985,6 +2439,7 @@
     },
     {
       "name": "02 Referensi endpoint - jalankan satu per satu",
+      "description": "Katalog endpoint lengkap. Login tiap peran tersedia di Autentikasi. Isi activity_id/task_id/dll dengan data yang ingin diuji; kegiatan dari folder 01 sudah diarsipkan setelah alur selesai. Unggahan foto memerlukan pilihan file pada Body > form-data > image. Jangan Run seluruh folder ini.",
       "item": [
         {
           "name": "Umum",
@@ -1012,7 +2467,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -1059,14 +2519,20 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+                      "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
               ]
             },
             {
-              "name": "Login",
+              "name": "Login Admin",
               "request": {
                 "method": "POST",
                 "header": [
@@ -1086,7 +2552,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{coordinator_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman\"\n}",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1102,11 +2568,162 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"coordinator_token\", data.token);",
-                      "  pm.environment.set(\"coordinator_id\", data.user.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"admin_token\", captured.token);",
+                      "pm.environment.set(\"admin_id\", captured.user.id);",
+                      "pm.test(\"Peran dan token sesuai\", () => {",
+                      "  pm.expect(pm.response.json().data.user.role).to.eql(\"admin\");",
+                      "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                      "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"admin_token\");",
+                      "pm.environment.unset(\"admin_id\");"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Login Koordinator",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login",
+                "description": "Akses: publik. ",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{coordinator_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"coordinator_token\", captured.token);",
+                      "pm.environment.set(\"coordinator_id\", captured.user.id);",
+                      "pm.test(\"Peran dan token sesuai\", () => {",
+                      "  pm.expect(pm.response.json().data.user.role).to.eql(\"koordinator\");",
+                      "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                      "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"coordinator_token\");",
+                      "pm.environment.unset(\"coordinator_id\");"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Login Relawan",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login",
+                "description": "Akses: publik. ",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{volunteer_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"device_name\": \"Postman Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"volunteer_token\", captured.token);",
+                      "pm.environment.set(\"volunteer_id\", captured.user.id);",
+                      "pm.test(\"Peran dan token sesuai\", () => {",
+                      "  pm.expect(pm.response.json().data.user.role).to.eql(\"relawan\");",
+                      "  pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty;",
+                      "  pm.expect(pm.response.json().data.token_type).to.eql(\"Bearer\");",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"volunteer_token\");",
+                      "pm.environment.unset(\"volunteer_id\");"
                     ]
                   }
                 }
@@ -1142,7 +2759,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1191,7 +2814,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1227,7 +2856,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.environment.unset(\"volunteer_token\");"
                     ]
                   }
                 }
@@ -1268,7 +2903,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1304,7 +2945,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1345,7 +2997,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1382,10 +3045,23 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"registration_id\", data.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"registration_id\", captured.id);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"registration_id\");"
                     ]
                   }
                 }
@@ -1421,7 +3097,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1457,7 +3144,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -1493,7 +3185,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -1534,7 +3231,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1584,10 +3292,14 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"activity_id\", data.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"activity_id\", captured.id);"
                     ]
                   }
                 },
@@ -1596,6 +3308,7 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
+                      "pm.environment.unset(\"activity_id\");",
                       "const start = new Date(Date.now() + 48 * 3600000);",
                       "pm.environment.set(\"starts_at\", start.toISOString());",
                       "pm.environment.set(\"ends_at\", new Date(start.getTime() + 3 * 3600000).toISOString());",
@@ -1635,7 +3348,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1684,7 +3403,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1720,7 +3445,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -1769,7 +3499,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -1815,7 +3550,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -1851,7 +3592,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1892,7 +3644,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -1942,10 +3705,23 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"task_id\", data.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"task_id\", captured.id);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"task_id\");"
                     ]
                   }
                 }
@@ -1981,7 +3757,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -2030,7 +3812,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -2079,7 +3867,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -2115,7 +3909,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -2164,7 +3963,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -2219,11 +4023,25 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"attendance_session_id\", data.session.id);",
-                      "  pm.environment.set(\"attendance_code\", data.code);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"attendance_session_id\", captured.session.id);",
+                      "pm.environment.set(\"attendance_code\", captured.code);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"attendance_session_id\");",
+                      "pm.environment.unset(\"attendance_code\");"
                     ]
                   }
                 }
@@ -2259,7 +4077,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -2308,7 +4131,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+                      "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -2344,7 +4173,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -2385,7 +4225,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -2437,10 +4288,23 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"documentation_id\", data.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"documentation_id\", captured.id);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"documentation_id\");"
                     ]
                   }
                 }
@@ -2489,7 +4353,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
@@ -2525,7 +4395,12 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}"
                     ]
                   }
                 }
@@ -2566,7 +4441,18 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Daftar dan pagination tersedia\", () => {",
+                      "  const result = pm.response.json();",
+                      "  pm.expect(result.data).to.be.an(\"array\");",
+                      "  pm.expect(result.current_page).to.be.a(\"number\");",
+                      "  pm.expect(result.total).to.be.a(\"number\");",
+                      "});"
                     ]
                   }
                 }
@@ -2616,10 +4502,23 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                      "  const data = pm.response.json().data;",
-                      "  pm.environment.set(\"user_id\", data.id);",
-                      "}"
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 201) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                      "const captured = pm.response.json().data;",
+                      "pm.environment.set(\"user_id\", captured.id);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.unset(\"user_id\");"
                     ]
                   }
                 }
@@ -2668,7 +4567,13 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Respons berupa JSON\", () => pm.response.to.be.json);",
+                      "if (pm.response.code !== 200) {",
+                      "  pm.execution.setNextRequest(null);",
+                      "  throw new Error(\"Alur dihentikan. Periksa respons, akun, token, dan prasyarat request ini.\");",
+                      "}",
+                      "pm.test(\"Objek data tersedia\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));"
                     ]
                   }
                 }
