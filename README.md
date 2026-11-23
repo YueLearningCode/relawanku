@@ -9,7 +9,7 @@ dan membantu koordinator mengelola kegiatan dalam satu tempat.
 
 **Proyek PAPB** · **Android** · **Kegiatan Sosial**
 
-[Tentang](#tentang-proyek) · [Setup Backend](#menjalankan-backend) · [Dokumentasi](#dokumentasi) · [Desain Visual](#desain-visual)
+[Tentang](#tentang-proyek) · [Fitur](#fitur-aplikasi) · [Absensi Kode Sesi](#absensi-kode-sesi) · [Menjalankan Proyek](#menjalankan-backend) · [Dokumentasi](#dokumentasi)
 
 </div>
 
@@ -17,64 +17,58 @@ dan membantu koordinator mengelola kegiatan dalam satu tempat.
 
 ## Daftar Isi
 
-- [🌱 Relawanku](#-relawanku)
-  - [Daftar Isi](#daftar-isi)
-  - [Tentang Proyek](#tentang-proyek)
-  - [Struktur Repositori](#struktur-repositori)
-  - [Backend API](#backend-api)
-  - [Menjalankan Backend](#menjalankan-backend)
-  - [Dokumentasi](#dokumentasi)
-  - [Fitur Aplikasi](#fitur-aplikasi)
-  - [Peran dan Hak Akses](#peran-dan-hak-akses)
-  - [Navigasi Aplikasi](#navigasi-aplikasi)
-  - [Rancangan Halaman](#rancangan-halaman)
-    - [Relawan](#relawan)
-    - [Koordinator](#koordinator)
-    - [Admin](#admin)
-  - [Alur Penggunaan](#alur-penggunaan)
-    - [Mengikuti kegiatan sebagai relawan](#mengikuti-kegiatan-sebagai-relawan)
-    - [Mengelola kegiatan sebagai koordinator](#mengelola-kegiatan-sebagai-koordinator)
-  - [Desain Visual](#desain-visual)
+- [Tentang Proyek](#tentang-proyek)
+- [Struktur Repositori](#struktur-repositori)
+- [Backend API](#backend-api)
+- [Menjalankan Backend](#menjalankan-backend)
+- [Menjalankan Android](#menjalankan-android)
+- [Pengujian dengan Postman](#pengujian-dengan-postman)
+- [Koneksi dan Data Uji](#koneksi-dan-data-uji)
+- [Pengujian Otomatis](#pengujian-otomatis)
+- [Dokumentasi](#dokumentasi)
+- [Fitur Aplikasi](#fitur-aplikasi)
+- [Absensi Kode Sesi](#absensi-kode-sesi)
+- [Peran dan Hak Akses](#peran-dan-hak-akses)
+- [Navigasi Aplikasi](#navigasi-aplikasi)
+- [Halaman Aplikasi](#halaman-aplikasi)
+- [Alur Penggunaan](#alur-penggunaan)
+- [Desain Visual](#desain-visual)
   - [Sistem Warna](#sistem-warna)
   - [Tipografi](#tipografi)
-    - [Sistem Warna](#sistem-warna)
-      - [Warna Utama dan Pendamping](#warna-utama-dan-pendamping)
-      - [Warna Teks](#warna-teks)
-      - [Warna Status](#warna-status)
-      - [Latar dan Permukaan](#latar-dan-permukaan)
-      - [Contoh Kombinasi Komponen](#contoh-kombinasi-komponen)
-  - [Teknologi dan Alat Kerja](#teknologi-dan-alat-kerja)
-  - [Database](#database)
+- [Teknologi dan Alat Kerja](#teknologi-dan-alat-kerja)
+- [Database](#database)
 
 ## Tentang Proyek
 
-Relawanku dirancang untuk mendukung perjalanan relawan sejak menemukan kegiatan hingga melihat dokumentasi dan riwayat keikutsertaan. Koordinator dapat mengatur kegiatan, peserta, tugas, dan absensi, sementara admin memiliki akses pengawasan lintas kegiatan.
+Relawanku adalah aplikasi Android untuk pendaftaran dan pengelolaan kegiatan relawan. Informasi kegiatan, peserta, tugas, kehadiran, dan dokumentasi tersimpan dalam satu sistem sehingga relawan dan penyelenggara dapat mengikuti perkembangan kegiatan dari aplikasi yang sama.
 
-Seluruh peran menggunakan **satu aplikasi Android**, dengan halaman dan menu yang menyesuaikan peran setelah pengguna masuk.
+Relawan dapat mencari kegiatan, mendaftar, melihat tugas, dan mencatat kehadiran. Koordinator mengelola kegiatan yang menjadi tanggung jawabnya, sedangkan admin mengelola akun dan memantau seluruh kegiatan. Menu dan hak akses mengikuti peran akun setelah pengguna masuk.
 
-> **Status repositori:** aplikasi Android Kotlin/XML sudah terhubung ke REST API Laravel melalui Retrofit pada branch `andro-backend`. Login memakai Sanctum dan role server; data kegiatan, tugas, absensi, dokumentasi, profil, dan pengguna berasal dari API.
+Aplikasi dikembangkan dengan **Kotlin dan XML**, terhubung melalui **Retrofit** ke **REST API Laravel**, dan menggunakan **MySQL** untuk penyimpanan data. Fitur unggulannya adalah **absensi kode sesi** dengan batas waktu dan validasi peserta di server.
 
 ## Struktur Repositori
 
-Repositori ini menampung backend Laravel, folder pengembangan Android, dan dokumentasi bersama dalam satu riwayat Git.
+Kode Android, backend, dan dokumentasi dikelola dalam satu repositori.
 
 ```text
 relawanku/
 ├── backend/       # Laravel, Composer, migration, dan tes backend
-├── android/       # Lokasi proyek Android Studio Kotlin dan XML
-├── docs/          # Dokumentasi API dan database bersama
+├── android/       # Aplikasi Android Kotlin dan XML
+├── docs/          # Dokumentasi API dan database
 ├── postman/       # Koleksi dan environment pengujian
 ├── scripts/       # Generator kontrak API
 └── README.md
 ```
 
-Buka `backend` di VS Code dan `android` di Android Studio setelah proyek Android dibuat. Semua commit dan push dilakukan melalui repositori induk yang sama, dengan satu folder `.git` di akar proyek.
+Buka folder `backend` untuk pengembangan API dan folder `android` melalui Android Studio untuk menjalankan aplikasi. Pengelolaan Git dilakukan dari akar repositori.
 
-Folder `android` berisi aplikasi untuk Relawan, Koordinator, dan Admin. Jalankan backend, buka folder Android di Android Studio, lalu masuk dengan akun server. Menu **Atur koneksi server** tersedia pada halaman masuk. Welcome tetap memakai XML, sedangkan halaman lain memakai renderer Kotlin. Ikuti [panduan Android](android/README.md) untuk emulator, HP, dan pengujian.
+Halaman pembuka menggunakan layout XML, sedangkan halaman lainnya dibangun melalui komponen tampilan Kotlin. Pengaturan koneksi tersedia pada halaman masuk melalui menu **Atur koneksi server**.
 
 ## Backend API
 
 Backend menggunakan **Laravel 13**, **PHP 8.3+**, **MySQL**, dan autentikasi token **Laravel Sanctum**. Endpoint tersedia melalui prefiks `/api`.
+
+Alur komunikasi: **Android → Retrofit → REST API Laravel → MySQL**. Laravel memeriksa token, hak akses, dan data permintaan sebelum mengembalikan respons JSON ke aplikasi.
 
 | Keterangan | Nilai |
 | --- | --- |
@@ -109,24 +103,92 @@ php artisan key:generate
 ```powershell
 php artisan migrate
 php artisan storage:link
-php artisan serve
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-Untuk menambahkan data contoh lokal, jalankan seeder secara opsional:
+Biarkan terminal server tetap berjalan selama menggunakan Android atau Postman. Periksa koneksi melalui `GET http://127.0.0.1:8000/api/health`; respons yang diharapkan adalah HTTP 200 dengan pesan `Relawanku API siap.`.
+
+Untuk menambahkan data contoh pada lingkungan `local` atau `testing`, jalankan perintah berikut dari terminal lain di folder `backend`:
 
 ```powershell
 php artisan db:seed --class=DemoSeeder
 ```
 
-Seeder tersedia untuk lingkungan `local` atau `testing`. Untuk mencoba API, impor koleksi dan environment Postman, lalu jalankan folder **01 Alur utama**. Sesuaikan email akun dan password environment dengan akun lokal yang digunakan.
+Seeder membuat akun `admin@gmail.com`, `koordinator@gmail.com`, dan `relawan@gmail.com` jika belum ada, dengan password awal dari `DEMO_PASSWORD`. Nama, password, dan peran akun yang sudah ada dipertahankan. Akun lokal yang pernah diubah dapat berbeda dari akun awal seeder.
 
-Pengujian backend dapat dijalankan dari folder yang sama:
+## Menjalankan Android
+
+1. Pastikan MySQL dan server Laravel sudah berjalan.
+2. Buka folder `android` melalui Android Studio. Siapkan Android SDK yang diminta proyek dan JDK 21, lalu lakukan Gradle Sync.
+3. Jalankan aplikasi pada emulator atau ponsel. Aplikasi menetapkan minimum SDK 24.
+4. Pada halaman masuk, buka **Atur koneksi server** dan pilih alamat sesuai perangkat:
+
+| Perangkat | Alamat API |
+| --- | --- |
+| Emulator Android Studio | `http://10.0.2.2:8000/api/` |
+| Ponsel melalui Wi-Fi yang sama | `http://IP-LAPTOP:8000/api/` |
+| Emulator atau ponsel melalui ADB reverse | `http://127.0.0.1:8000/api/` |
+
+Untuk koneksi USB melalui ADB reverse, jalankan:
+
+```powershell
+adb reverse tcp:8000 tcp:8000
+```
+
+Gunakan alamat API dengan akhiran `/`, lalu masuk dengan akun yang tersimpan di server. Pendaftaran mandiri membuat akun Relawan; akun Koordinator dibuat oleh Admin. Panduan build, koneksi, dan tes perangkat tersedia di [android/README.md](android/README.md).
+
+## Pengujian dengan Postman
+
+1. Jalankan MySQL dan Laravel, lalu pastikan `/api/health` dapat diakses.
+2. Impor koleksi dan environment dari folder `postman`.
+3. Pilih environment **Relawanku - Local**. Periksa `base_url`, email, dan password agar sesuai dengan server serta akun yang digunakan.
+4. Pilih satu folder melalui Collection Runner:
+
+| Folder | Penggunaan |
+| --- | --- |
+| **00 Data saat ini - baca saja** | Login dan membaca data yang sudah ada. Sesuaikan ID kegiatan pilihan pada environment dengan database lokal. |
+| **01 Alur utama - jalankan folder ini** | Membuat kegiatan dan tugas uji, mendaftarkan relawan, melakukan absensi, lalu mengarsipkan data uji. |
+| **02 Referensi endpoint - jalankan satu per satu** | Menjalankan endpoint secara manual sesuai akun, ID data, dan prasyaratnya. |
+
+Jalankan satu folder pada setiap pengujian. Token, ID hasil pembuatan data, dan kode absensi diisi otomatis dari respons API. Folder 01 membuat jadwal kegiatan relatif terhadap waktu eksekusi agar alurnya dapat diulang.
+
+Request berlabel **Uji 403/404/409** memang mengharapkan penolakan tersebut. Hasil dinilai dari kesesuaian respons dengan tes, bukan hanya kode HTTP. Unggahan foto dijalankan manual dengan memilih berkas pada **Body > form-data > image**.
+
+Langkah demo dan penjelasan variabel tersedia di [postman/README.md](postman/README.md).
+
+## Koneksi dan Data Uji
+
+| Kondisi | Pemeriksaan |
+| --- | --- |
+| Request **Status API** tidak tersambung | Pastikan proses Laravel masih berjalan dan host serta port pada `base_url` sesuai. Impor koleksi tidak menjalankan server. |
+| Login ditolak | Periksa akun pada database dan nilai email/password di environment. Seeder tidak mengatur ulang password akun yang sudah ada. |
+| Pendaftaran ditolak | Periksa status kegiatan, batas pendaftaran, waktu mulai, kuota, dan apakah relawan sudah terdaftar. |
+| Absensi ditolak | Pastikan kegiatan sedang berlangsung, peserta masih aktif, sesi belum ditutup, dan kode belum kedaluwarsa. |
+| Foto tidak tampil | Periksa tautan `public/storage` dan pastikan alamat media dapat dijangkau dari perangkat Android. |
+
+Data kegiatan contoh memakai jadwal saat pertama dibuat. Menjalankan ulang seeder tidak menggeser jadwal tersebut. Gunakan kegiatan uji baru untuk mencoba pendaftaran dan absensi pada tanggal yang berbeda.
+
+## Pengujian Otomatis
+
+Jalankan tes backend dari folder `backend`:
 
 ```powershell
 php artisan test --compact
 ```
 
-Panduan konfigurasi dan integrasi Android tersedia di [docs/API.md](docs/API.md). Catatan hasil pengujian beserta kendala yang sudah diketahui ada di [todo.md](todo.md).
+Dari folder `android`, jalankan build, unit test, dan lint:
+
+```powershell
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+Tes antarmuka memerlukan emulator atau perangkat Android yang terhubung:
+
+```powershell
+.\gradlew.bat :app:connectedDebugAndroidTest
+```
+
+Tes backend mencakup autentikasi, hak akses, validasi, kuota, pendaftaran, tugas, dan absensi. Tes Android mencakup komunikasi API, penyimpanan sesi, serta interaksi antarmuka. Konfigurasi tes integrasi tersedia di [panduan Android](android/README.md); hasil pengujian yang telah dicatat tersedia di [todo.md](todo.md).
 
 ## Dokumentasi
 
@@ -137,22 +199,37 @@ Panduan konfigurasi dan integrasi Android tersedia di [docs/API.md](docs/API.md)
 | [OpenAPI JSON](docs/openapi.json) | Kontrak REST API untuk diimpor ke alat dokumentasi atau pengujian. |
 | [Koleksi Postman](postman/Relawanku.postman_collection.json) | Alur pengujian otomatis dan referensi endpoint. |
 | [Environment Postman](postman/Relawanku.local.postman_environment.json) | Base URL lokal, akun, token, dan ID objek pengujian. |
-| [Panduan Android](android/README.md) | Pembuatan proyek Kotlin/XML dan koneksi ke backend. |
+| [Panduan demo Postman](postman/README.md) | Persiapan server, pilihan alur demo, variabel, dan pembacaan hasil tes. |
+| [Panduan Android](android/README.md) | Menjalankan aplikasi, mengatur koneksi, build, dan pengujian. |
 | [Checklist dan bukti pengujian](todo.md) | Tahap implementasi, hasil verifikasi, dan pekerjaan lanjutan. |
 
 ## Fitur Aplikasi
 
-Backend menyediakan API untuk fitur berikut. Tampilan dan interaksi Android mengikuti rancangan pada bagian selanjutnya.
+Fitur berikut tersedia melalui aplikasi Android dan REST API Laravel.
 
 | Fitur | Gambaran penggunaan |
 | --- | --- |
 | **Jelajahi kegiatan** | Temukan kegiatan melalui foto, jadwal, lokasi, pencarian, dan filter. |
-| **Pendaftaran relawan** | Baca persyaratan dan sisa kuota sebelum mendaftar kegiatan. |
-| **Pengelolaan kegiatan** | Buat dan perbarui kegiatan, atur kuota, serta kelola peserta. |
-| **Pembagian tugas** | Koordinator membagikan tugas yang dapat dilihat relawan pada kegiatan terkait. |
-| **Absensi kegiatan** | Koordinator membuka absensi dan relawan mencatat kehadirannya. |
+| **Pendaftaran relawan** | Daftar dan batalkan keikutsertaan sesuai jadwal, dengan pemeriksaan kuota dan pendaftaran ganda. |
+| **Pengelolaan kegiatan** | Buat, perbarui, dan arsipkan kegiatan, atur kuota, serta kelola peserta. |
+| **Pembagian tugas** | Koordinator membuat tugas dan menetapkan relawan peserta sebagai penanggung jawab; relawan memperbarui status tugasnya. |
+| **Absensi kode sesi** | Pengelola membuka sesi berbatas waktu dan peserta aktif memasukkan kode untuk mencatat kehadiran. |
 | **Dokumentasi dan riwayat** | Lihat dokumentasi kegiatan serta riwayat keikutsertaan relawan. |
 | **Administrasi pengguna** | Admin mengelola akun, menetapkan koordinator, dan memantau kegiatan. |
+
+## Absensi Kode Sesi
+
+Absensi kode sesi menjadi fitur unggulan Relawanku. Pengelola membuka sesi pada kegiatan yang sedang berlangsung, kemudian membagikan kode kepada peserta. Kehadiran dicatat menggunakan waktu server setelah seluruh pemeriksaan terpenuhi.
+
+1. Koordinator atau admin membuka sesi dengan durasi 1–120 menit, paling lama sampai kegiatan berakhir.
+2. Server membuat kode acak delapan karakter. Kode asli dikirim sekali saat sesi dibuka dan disimpan sementara di memori aplikasi.
+3. Relawan memasukkan kode melalui tab **Absensi** pada kegiatan yang diikuti.
+4. Server memeriksa peran Relawan, waktu kegiatan, kepesertaan aktif, kode sesi yang masih berlaku, dan kehadiran yang sudah tercatat.
+5. Jika valid, kehadiran disimpan dan dapat dilihat pada daftar kehadiran peserta.
+
+Membuka sesi baru menutup sesi sebelumnya. Pengelola juga dapat menutup sesi secara manual. Satu peserta hanya dapat mencatat kehadiran sekali pada setiap kegiatan.
+
+Database menyimpan hash SHA-256 dari kode, sedangkan pengiriman kode absensi dibatasi 10 permintaan per menit per pengguna. Validasi ini mengatur kepesertaan dan waktu absensi; lokasi fisik peserta tidak diperiksa.
 
 ## Peran dan Hak Akses
 
@@ -164,61 +241,61 @@ Backend menyediakan API untuk fitur berikut. Tampilan dan interaksi Android meng
 
 ## Navigasi Aplikasi
 
-Rancangan menu utama disesuaikan dengan kebutuhan setiap peran.
+Menu utama mengikuti peran akun yang dikirim oleh server setelah login.
 
 | Peran | Menu utama |
 | --- | --- |
 | Relawan | Beranda · Jelajahi · Kegiatanku · Profil |
-| Koordinator | Dashboard · Kelola Kegiatan · Profil |
-| Admin | Dashboard · Pengguna · Semua Kegiatan · Profil |
+| Koordinator | Dashboard · Kegiatan · Profil |
+| Admin | Dashboard · Pengguna · Kegiatan · Profil |
 
-## Rancangan Halaman
+## Halaman Aplikasi
 
 ### Relawan
 
-Tampilan relawan berfokus pada pencarian kegiatan sosial yang ramah, visual, dan mudah digunakan. Navigasi bawah terdiri dari **Beranda**, **Jelajahi**, **Kegiatanku**, dan **Profil**.
+Relawan menggunakan empat menu utama: **Beranda**, **Jelajahi**, **Kegiatanku**, dan **Profil**.
 
 | Halaman | Isi dan interaksi |
 | --- | --- |
-| **Beranda** | Sapaan, kegiatan terdekat, kegiatan yang sedang diikuti, dan tugas berikutnya. |
+| **Beranda** | Sapaan, ringkasan jumlah pendaftaran, kehadiran, tugas aktif, dan daftar kegiatan terbaru. |
 | **Jelajahi Kegiatan** | Kartu kegiatan berisi foto, nama, tanggal, lokasi, dan sisa kuota, dilengkapi pencarian serta filter. |
 | **Detail Kegiatan** | Deskripsi, jadwal, persyaratan, kuota, dan tombol **Daftar kegiatan**. |
-| **Kegiatanku** | Kegiatan yang diikuti, tugas yang diberikan, tombol absensi, dan riwayat keikutsertaan. |
-| **Profil** | Identitas relawan dan tombol keluar. |
+| **Kegiatanku** | Daftar keikutsertaan beserta status pendaftaran dan kehadiran, dengan akses ke detail kegiatan. |
+| **Profil** | Identitas, formulir perubahan profil, riwayat aktivitas, dan tombol keluar. |
 
 ### Koordinator
 
-Tampilan koordinator berfokus pada pengelolaan kegiatan dan tetap nyaman digunakan melalui ponsel.
+Koordinator mengelola kegiatan miliknya melalui dashboard dan halaman pengelolaan kegiatan.
 
 | Halaman | Isi dan interaksi |
 | --- | --- |
-| **Dashboard** | Ringkasan jumlah kegiatan aktif, peserta terdaftar, dan kehadiran. Setiap ringkasan dapat dibuka untuk melihat detail. |
-| **Kelola Kegiatan** | Daftar kegiatan dengan tombol tambah, edit, hapus, dan pilihan hapus massal. |
+| **Dashboard** | Ringkasan kegiatan aktif, total kegiatan, peserta aktif, kehadiran, dan peserta yang belum absen. |
+| **Kelola Kegiatan** | Daftar kegiatan dengan aksi tambah, edit, arsip, dan arsip massal. |
 | **Detail Pengelolaan** | Bagian **Ringkasan**, **Peserta**, **Tugas**, **Absensi**, dan **Dokumentasi**. |
 | **Profil** | Identitas koordinator dan tombol keluar. |
 
-Peserta, tugas, absensi, dan dokumentasi dikelola di dalam kegiatan terkait. Sebagai contoh, koordinator membuka kegiatan **Bersih Pantai**, lalu mengatur peserta dan tugas untuk kegiatan tersebut.
+Peserta, tugas, absensi, dan dokumentasi dikelola dari detail masing-masing kegiatan. Penanggung jawab tugas dipilih dari relawan yang masih terdaftar aktif pada kegiatan tersebut.
 
 ### Admin
 
-Tampilan admin berfokus pada pengelolaan pengguna dan pengawasan seluruh kegiatan.
+Admin mengelola akun dan memantau kegiatan lintas koordinator.
 
 | Halaman | Isi dan interaksi |
 | --- | --- |
 | **Dashboard** | Ringkasan pengguna dan kegiatan untuk membantu pengawasan. |
-| **Pengguna** | Pengelolaan akun dan penetapan koordinator. |
-| **Semua Kegiatan** | Pemantauan kegiatan lintas koordinator dan penanganan kegiatan bermasalah. |
+| **Pengguna** | Pencarian dan filter akun, pembuatan pengguna, perubahan peran, serta pengaktifan atau penonaktifan akun. |
+| **Kelola Kegiatan** | Daftar kegiatan lintas koordinator beserta aksi pengelolaannya. |
 | **Profil** | Identitas admin dan tombol keluar. |
 
 ## Alur Penggunaan
 
 ### Mengikuti kegiatan sebagai relawan
 
-1. Menemukan kegiatan melalui beranda atau halaman jelajah.
+1. Masuk ke akun Relawan, lalu menemukan kegiatan melalui beranda atau halaman jelajah.
 2. Membaca deskripsi, jadwal, lokasi, persyaratan, dan sisa kuota.
 3. Mendaftar dan membuka kegiatan melalui **Kegiatanku**.
-4. Melihat tugas yang diberikan koordinator.
-5. Melakukan absensi saat kegiatan berlangsung.
+4. Melihat dan memperbarui status tugas yang diberikan koordinator.
+5. Memasukkan kode sesi absensi saat kegiatan berlangsung.
 6. Melihat dokumentasi dan riwayat keikutsertaan.
 
 ### Mengelola kegiatan sebagai koordinator
@@ -226,21 +303,21 @@ Tampilan admin berfokus pada pengelolaan pengguna dan pengawasan seluruh kegiata
 1. Membuat kegiatan dan menentukan jadwal, persyaratan, serta kuota.
 2. Memantau dan mengelola peserta yang terdaftar.
 3. Membagikan tugas kepada relawan.
-4. Membuka absensi dan memantau kehadiran.
+4. Membuka sesi absensi, membagikan kode, dan memantau kehadiran.
 5. Mengunggah dokumentasi kegiatan.
 
 ## Desain Visual
 
-Antarmuka dirancang agar ramah untuk relawan dan praktis untuk pengelola kegiatan.
+Identitas visual Relawanku menggunakan warna teal, sage, dan font Nunito. Warna, ukuran teks, serta bentuk komponen mengikuti panduan berikut.
 
-| Elemen | Arah desain |
+| Elemen | Penggunaan |
 | --- | --- |
 | **Warna** | Primary Teal `#0F766E` dan Secondary Sage `#DCECE3`, dipadukan dengan permukaan putih dan teks gelap. |
 | **Tipografi** | Nunito dengan ketebalan Regular, SemiBold, dan Bold sesuai fungsi teks. |
 | **Kartu kegiatan** | Foto dan informasi utama yang membantu relawan memilih kegiatan. |
 | **Status** | Label yang mudah dikenali: **Pendaftaran dibuka**, **Kuota penuh**, **Sudah terdaftar**, dan **Selesai**. |
 | **Aksi utama** | Satu tombol yang menonjol pada setiap halaman, seperti **Daftar kegiatan** atau **Buka absensi**. |
-| **Dashboard** | Ringkasan yang mudah dipindai; grafik digunakan jika membantu memahami data. |
+| **Dashboard** | Ringkasan angka dan tindakan untuk mengakses kegiatan, pengguna, atau riwayat. |
 
 ### Sistem Warna
 
@@ -313,7 +390,7 @@ Gunakan warna status bersama teks atau ikon agar maknanya tetap jelas.
 
 ### Tipografi
 
-Rancangan tipografi menggunakan **Nunito** untuk judul, isi, label, dan navigasi. Ukuran teks dan tinggi baris berikut menjadi acuan tampilan Android dalam satuan `sp`.
+Panduan tipografi menggunakan **Nunito** untuk judul, isi, label, dan navigasi. Ukuran teks dan tinggi baris dinyatakan dalam satuan Android `sp`.
 
 | Elemen | Font | Ketebalan | Ukuran Android | Tinggi baris |
 | --- | --- | --- | --- | --- |
@@ -329,7 +406,7 @@ Rancangan tipografi menggunakan **Nunito** untuk judul, isi, label, dan navigasi
 
 ## Teknologi dan Alat Kerja
 
-Backend Laravel dan autentikasi Sanctum sudah digunakan pada proyek. Teknologi Android serta alat desain, kolaborasi, dan pelaporan berikut menjadi acuan pengembangan tim.
+Teknologi utama aplikasi terdiri dari Kotlin, XML, Retrofit, Laravel, Sanctum, dan MySQL. Perancangan, pengujian, serta dokumentasi proyek menggunakan alat pendukung berikut.
 
 | Kebutuhan | Pilihan teknologi / alat |
 | --- | --- |
@@ -341,7 +418,7 @@ Backend Laravel dan autentikasi Sanctum sudah digunakan pada proyek. Teknologi A
 | **Pengujian API** | Postman |
 | **Rancangan layar** | Figma |
 | **ERD dan use case** | draw.io |
-| **Kolaborasi kode** | Git dan GitHub; GitHub Desktop bila diperlukan |
+| **Kolaborasi kode** | Git, GitHub, dan GitHub Desktop |
 | **Pembagian pekerjaan** | GitHub Projects |
 | **Laporan** | Microsoft Word |
 | **Poster dan flyer** | Canva |
@@ -358,6 +435,8 @@ Backend Laravel dan autentikasi Sanctum sudah digunakan pada proyek. Teknologi A
 
 Database mencakup akun, kegiatan, pendaftaran, tugas, sesi absensi, kehadiran, dokumentasi, dan riwayat aktivitas.
 
+Entitas CRUD utama adalah **kegiatan** (`activities`) dan **tugas** (`tasks`). Satu kegiatan dapat memiliki banyak tugas, yang dihubungkan melalui `tasks.activity_id`.
+
 | Tabel | Fungsi |
 | --- | --- |
 | `users` | Menyimpan akun dan peran pengguna. |
@@ -369,4 +448,6 @@ Database mencakup akun, kegiatan, pendaftaran, tugas, sesi absensi, kehadiran, d
 | `attendance_sessions` | Menyimpan sesi absensi dan hash kode yang memiliki masa berlaku. |
 | `activity_logs` | Mencatat aksi pengelolaan kegiatan dan akun. |
 
-Migration, model, dan aturan API sudah mencakup tabel tersebut. Rincian kolom, relasi, dan data contoh tersedia di [dokumentasi database](docs/DATABASE.md).
+Pendaftaran menghubungkan relawan dengan kegiatan. Setiap pendaftaran memiliki paling banyak satu catatan kehadiran, sedangkan satu sesi absensi dapat digunakan oleh banyak peserta. Kegiatan, tugas, dan dokumentasi menggunakan pengarsipan agar riwayat tetap tersimpan.
+
+Rincian kolom, relasi, dan aturan data tersedia di [dokumentasi database](docs/DATABASE.md).
