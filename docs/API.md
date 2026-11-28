@@ -58,7 +58,7 @@ Backend hanya melayani API; tidak memerlukan Node.js, npm, Vite, atau build fron
 6. Folder **02 Referensi endpoint - jalankan satu per satu** berisi seluruh endpoint. Jalankan request sesuai prasyaratnya; pembatalan pendaftaran memerlukan kegiatan yang belum mulai, sedangkan absensi memerlukan kegiatan yang sedang berlangsung. Jangan menjalankan seluruh koleksi sekaligus.
 7. Untuk request foto, pilih file lokal pada **Body → form-data → image**. Unggahan foto dijalankan manual dan tidak termasuk alur otomatis folder 01.
 
-Alur otomatis mencakup login admin, tetapi pengelolaan akun dan unggahan foto diuji terpisah melalui tes fitur. Request referensi login memakai akun koordinator; untuk token admin/relawan, jalankan request login masing-masing di folder 01.
+Alur otomatis mencakup login tiga peran. Pengelolaan akun dan unggahan foto dijalankan terpisah. Subfolder **Autentikasi** pada folder 02 menyediakan request login untuk Admin, Koordinator, dan Relawan. Folder **00 Data saat ini - baca saja** dapat digunakan setelah ID kegiatan pilihan pada environment disesuaikan dengan database. Panduan lengkap tersedia di [postman/README.md](../postman/README.md).
 
 ## Autentikasi dan bentuk respons
 
@@ -76,7 +76,7 @@ Contoh login:
 
 ```json
 {
-  "email": "koordinator@relawanku.test",
+  "email": "koordinator@gmail.com",
   "password": "RelawanDemo123!",
   "device_name": "Android"
 }

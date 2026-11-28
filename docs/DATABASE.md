@@ -139,8 +139,8 @@ Seeder hanya berjalan pada `APP_ENV=local` atau `testing`. Isinya tiga akun, tig
 
 | Peran | Email | Password awal |
 | --- | --- | --- |
-| Admin | admin@relawanku.test | Nilai `DEMO_PASSWORD` di `.env` |
-| Koordinator | koordinator@relawanku.test | Nilai `DEMO_PASSWORD` di `.env` |
-| Relawan | relawan@relawanku.test | Nilai `DEMO_PASSWORD` di `.env` |
+| Admin | admin@gmail.com | Nilai `DEMO_PASSWORD` di `.env` |
+| Koordinator | koordinator@gmail.com | Nilai `DEMO_PASSWORD` di `.env` |
+| Relawan | relawan@gmail.com | Nilai `DEMO_PASSWORD` di `.env` |
 
 Nilai contoh `DEMO_PASSWORD` adalah `RelawanDemo123!`. Seeder tidak mengganti password akun yang sudah ada dan tidak mengembalikan kegiatan demo yang sudah diarsipkan. Tanggal kegiatan ditentukan saat pertama dibuat, sehingga seeder ulang tidak menggeser jadwal yang telah tersimpan.

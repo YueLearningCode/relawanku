@@ -188,7 +188,7 @@ Tes antarmuka memerlukan emulator atau perangkat Android yang terhubung:
 .\gradlew.bat :app:connectedDebugAndroidTest
 ```
 
-Tes backend mencakup autentikasi, hak akses, validasi, kuota, pendaftaran, tugas, dan absensi. Tes Android mencakup komunikasi API, penyimpanan sesi, serta interaksi antarmuka. Konfigurasi tes integrasi tersedia di [panduan Android](android/README.md); hasil pengujian yang telah dicatat tersedia di [todo.md](todo.md).
+Tes backend mencakup autentikasi, hak akses, validasi, kuota, pendaftaran, tugas, dan absensi. Tes Android mencakup komunikasi API, penyimpanan sesi, serta interaksi antarmuka. Konfigurasi tes integrasi tersedia di [panduan Android](android/README.md).
 
 ## Dokumentasi
 
@@ -201,7 +201,6 @@ Tes backend mencakup autentikasi, hak akses, validasi, kuota, pendaftaran, tugas
 | [Environment Postman](postman/Relawanku.local.postman_environment.json) | Base URL lokal, akun, token, dan ID objek pengujian. |
 | [Panduan demo Postman](postman/README.md) | Persiapan server, pilihan alur demo, variabel, dan pembacaan hasil tes. |
 | [Panduan Android](android/README.md) | Menjalankan aplikasi, mengatur koneksi, build, dan pengujian. |
-| [Checklist dan bukti pengujian](todo.md) | Tahap implementasi, hasil verifikasi, dan pekerjaan lanjutan. |
 
 ## Fitur Aplikasi
 
@@ -423,13 +422,6 @@ Teknologi utama aplikasi terdiri dari Kotlin, XML, Retrofit, Laravel, Sanctum, d
 | **Laporan** | Microsoft Word |
 | **Poster dan flyer** | Canva |
 | **Video demonstrasi** | OBS Studio untuk merekam dan CapCut untuk menyunting |
-
-<details>
-<summary>Lihat gambar referensi pilihan alat kerja</summary>
-
-![Tabel referensi teknologi dan alat kerja Relawanku](image-1.png)
-
-</details>
 
 ## Database
 

@@ -8,6 +8,7 @@
 .DS_Store
 Thumbs.db
 *.log
+/pengumpulan/
 
 # File lokal dan hasil build Android
 /android/.gradle/

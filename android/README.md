@@ -1,6 +1,6 @@
 # Android Relawanku
 
-Aplikasi native Kotlin/XML dengan Nunito dan palet teal-sage, terhubung ke Laravel melalui Retrofit 3.0.0 dan Gson. Branch integrasi: `andro-backend`. Welcome tetap berupa XML; halaman lain tetap dirender dari Kotlin sesuai kesepakatan sebelumnya.
+Aplikasi Android berbasis Kotlin dan XML, terhubung ke REST API Laravel melalui Retrofit 3.0.0 dan Gson. Antarmuka menggunakan font Nunito serta palet teal dan sage. Halaman pembuka memakai layout XML, sedangkan halaman lainnya dibangun melalui komponen tampilan Kotlin.
 
 ## Menjalankan dari Android Studio
 
@@ -29,7 +29,7 @@ Untuk ADB reverse, jalankan dari terminal dengan Android platform-tools di PATH:
 adb reverse tcp:8000 tcp:8000
 ```
 
-Jika ada beberapa perangkat, gunakan `adb -s SERIAL reverse tcp:8000 tcp:8000`. `127.0.0.1` pada Android hanya menuju laptop jika reverse sudah aktif. Aturan firewall dan jaringan tetap memengaruhi koneksi Wi-Fi/10.0.2.2. Pada komputer pengujian, port uji melalui 10.0.2.2 mengalami timeout; ADB reverse berhasil.
+Jika ada beberapa perangkat, gunakan `adb -s SERIAL reverse tcp:8000 tcp:8000`. `127.0.0.1` pada Android hanya menuju laptop jika reverse sudah aktif. Jika koneksi Wi-Fi atau alamat emulator tidak dapat dijangkau, periksa firewall dan jaringan atau gunakan ADB reverse.
 
 6. Masuk menggunakan email dan password akun server. Role dibaca dari respons login, tanpa pemilih role demo.
 
@@ -41,19 +41,19 @@ URL default debug adalah `http://10.0.2.2:8000/api/`. Bisa diganti melalui penga
 .\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.10:8000/api/
 ```
 
-Pengaturan server tersimpan di perangkat dan mengungguli default build. Ganti kembali lewat halaman masuk bila perlu. Prefiks API tetap `/api/`, tanpa `/v1`.
+Pengaturan server tersimpan di perangkat dan digunakan sebagai pengganti alamat bawaan build. Alamat dapat diubah kembali melalui halaman masuk. Prefiks API adalah `/api/`.
 
 ## Perilaku aplikasi
 Password pada login, pendaftaran Relawan, dan form Admin membuat pengguna selalu disamarkan setelah seluruh konfigurasi input selesai. Ikon mata terbuka berarti **Tampilkan kata sandi**; setelah ditekan, ikon mata dicoret berarti **Sembunyikan kata sandi**. Toggle mempertahankan isi, selection/kursor, tipe input password, dan pesan validasi. Ikon error terpisah tidak menutupi tombol mata. `PasswordVisibilityTest` mencakup kondisi awal, toggle berulang, validasi, serta independensi password dan konfirmasi.
 ### Navigasi, keyboard, dan tampilan
 
-Shell menerapkan inset sistem satu kali. Bottom navigation memiliki area isi 64 dp ditambah area aman navigasi sistem, dengan divider tipis dan label yang konsisten. Padding bawah tidak lagi diterapkan oleh root dan Material sekaligus.
+Tata letak memperhitungkan area status bar, navigasi sistem, dan keyboard. Bottom navigation memiliki area isi 64 dp ditambah area aman navigasi sistem.
 
 Saat keyboard terbuka, bottom navigation disembunyikan sementara. Inset keyboard hanya diterapkan pada area konten; toolbar halaman berada di luar area scroll. Pada Profil, hanya formulir yang bergulir agar field yang dipilih terlihat, sementara judul halaman tetap di atas. Tombol Back menutup keyboard terlebih dahulu dan tetap berada pada halaman yang sama. Navigasi dan aksi simpan menutup keyboard agar tidak terbawa ke halaman berikutnya.
 
-Dashboard ketiga role memakai hierarki judul, ringkasan angka, kartu statistik, dan menu tindakan yang lebih ringkas. Profil memisahkan identitas, informasi pribadi, dan pengaturan akun. Tombol sekunder memakai outline, sudut kartu lebih sederhana, area sentuh profil minimal 48 dp, dan kartu kegiatan menampilkan kapasitas dari data API. Nunito dan palet teal-sage tetap dipakai; Welcome tetap XML.
+Dashboard ketiga role menampilkan judul, ringkasan angka, kartu statistik, dan menu tindakan. Profil memisahkan identitas, informasi pribadi, dan pengaturan akun. Tombol sekunder memakai outline, area sentuh profil minimal 48 dp, dan kartu kegiatan menampilkan kapasitas dari data API.
 
-Tes `WindowInsetsFlowTest` memeriksa geometri bottom navigation, fokus field di atas keyboard, toolbar profil yang tetap, isi form yang tidak hilang saat keyboard dibuka-tutup, dan pemulihan navigasi untuk ketiga role. Pada emulator dengan hardware keyboard, aktifkan software keyboard sebelum tes (`adb -s SERIAL shell settings put secure show_ime_with_hard_keyboard 1`), kemudian pulihkan pengaturan setelahnya. Hasil pemeriksaan gesture/tiga tombol dan font besar dicatat di `../todo.md`.
+Tes `WindowInsetsFlowTest` memeriksa posisi bottom navigation, fokus field di atas keyboard, toolbar profil, isi formulir saat keyboard dibuka-tutup, dan pemulihan navigasi untuk ketiga role. Pada emulator dengan hardware keyboard, aktifkan software keyboard sebelum tes (`adb -s SERIAL shell settings put secure show_ime_with_hard_keyboard 1`), kemudian pulihkan pengaturan setelahnya.
 
 Data baca kegiatan/dashboard/Kegiatanku/tugas/dokumentasi/riwayat memakai `ReadCache` dalam ViewModel selama 30 detik, maksimal 64 respons. Kembali ke halaman yang sama selama cache masih berlaku tidak mengirim request ulang. Cache dipisah per server/akun/role/filter/halaman, dan dibersihkan ketika sesi berakhir. `auth/me`, pengguna Admin, dan daftar kehadiran tetap diambil dari server. Tombol **Muat ulang** memaksa pengambilan data halaman aktif. Aksi tulis tidak di-cache dan otomatis membatalkan cache terkait.
 
@@ -115,7 +115,7 @@ adb reverse tcp:8765 tcp:8765
   -Pandroid.testInstrumentationRunnerArguments.integrationPassword=PASSWORD_DATABASE_UJI
 ```
 
-Alur integrasi mencakup pendaftaran, login tiga role, validasi kredensial salah, pendaftaran kegiatan, tugas dan statusnya, absensi berkode, upload/edit/arsip dokumentasi, edit kegiatan, tambah pengguna, penolakan akses admin bagi relawan, riwayat, serta token yang dicabut. Sebagian persiapan dan pemeriksaan memakai Retrofit langsung; tindakan pengguna utama dijalankan melalui UI. Hasil verifikasi dicatat di [../todo.md](../todo.md).
+Alur integrasi mencakup pendaftaran, login tiga role, validasi kredensial salah, pendaftaran kegiatan, tugas dan statusnya, absensi berkode, upload/edit/arsip dokumentasi, edit kegiatan, tambah pengguna, penolakan akses admin bagi relawan, riwayat, serta token yang dicabut. Sebagian persiapan dan pemeriksaan memakai Retrofit langsung; tindakan pengguna utama dijalankan melalui UI.
 
 Batas pengujian: belum diverifikasi pada HP fisik/API 24, jaringan Wi-Fi pengguna, signing release, atau deployment publik. Draft formulir belum dipulihkan saat rotasi; data server dimuat ulang dan aksi tidak diulang otomatis.
 
@@ -137,4 +137,4 @@ Jangan commit local.properties, token, password, signing key, atau hasil build. 
 
 Halaman Welcome tersusun sepenuhnya di app/src/main/res/layout/screen_welcome.xml. Buka file tersebut lalu pilih Split atau Design di Android Studio untuk melihat dan mengubah tata letaknya. Teks berada di values/strings_welcome.xml; warna, Nunito, ikon dan foto memakai resource yang sudah tersedia. Preview menampilkan konten asli karena teks dan gambar ditentukan langsung di XML.
 
-Alur awal: splash pertama → splash kedua → Welcome → Masuk atau Daftar. Kotlin pada fungsi welcome di MainActivity hanya memuat layout dan memasang aksi tombol. Layar lainnya tetap memakai pendekatan Kotlin sebelumnya.
+Alur awal: splash pertama → splash kedua → Welcome → Masuk atau Daftar. Fungsi welcome di MainActivity memuat layout dan memasang aksi tombol. Halaman lainnya menggunakan komponen tampilan Kotlin.
